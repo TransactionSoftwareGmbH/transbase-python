@@ -1,4 +1,5 @@
 # https://www.python.org/dev/peps/pep-0249/
+from transbase import tci
 
 # GLOBALS
 apilevel = "2.0"
@@ -34,8 +35,12 @@ class Cursor:
     """
     arraysize = 1
 
-    def __init__(self):
-        pass
+    __statement = tci.TCIEnvironment()
+    __resultset = tci.TCIResultSet()
+
+    def __init__(self, connection, error):
+        self.__state = tci.allocateStatement(connection, error, self.__statement)
+        self.__state = tci.allocateResultSet(self.__statement, error, self.__resultset)
 
     def __del__(self):
         self.close()
@@ -45,7 +50,8 @@ class Cursor:
         Prepare and execute a database operation (query or command).
         Parameters may be provided as sequence or mapping and will be bound to variables in the operation
         """
-        pass
+        # TODO params
+        self.__state = tci.executeDirect(self.__resultset, operation, 1, 0)
 
     def executemany(self, operation: str, seq_of_parameters=[]):
         """
@@ -58,7 +64,7 @@ class Cursor:
         """
         Fetch the next row of a query result set, returning a single sequence, or None when no more data is available.
         """
-        pass
+        self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
 
     def fetchmany(self, size=None):
         """
@@ -88,14 +94,39 @@ class Cursor:
         """
         Close the cursor now (rather than whenever __del__ is called)
         """
+        if self.__resultset:
+            tci.freeResultSet(self.__resultset)
+            self.__resultset = None
+        if self.__statement:
+            tci.freeStatement(self.__statement)
+            self.__statement = None
+        self.__state = None
+
+    def state(self):
+        return self.__state
+
+    def __setResultSetMeta(self):
+        # get row size, column info
+        pass
+
+    def __getRow(self):
+        # get row data
         pass
 
     # def callproc( procname [, parameters ] )
 
 
 class Connection:
-    def __init__(self, config):
-        self.config = config
+    __env = tci.TCIEnvironment()
+    __con = tci.TCIConnection()
+    __error = tci.TCIError()
+
+    def __init__(self, url, user, password):
+        tci.allocateEnvironment(self.__env)
+        tci.allocateError(self.__env, self.__error)
+        tci.allocateConnection(self.__env, self.__error, self.__con)
+        self.__state = tci.connect(self.__con, url)
+        self.__state = tci.login(self.__con, user, password)
 
     def __del__(self):
         self.close()
@@ -104,7 +135,16 @@ class Connection:
         """
         Close the connection now (rather than whenever .__del__() is called).
         """
-        pass
+        if self.__con:
+            tci.freeConnection(self.__con)
+            self.__con = None
+        if self.__error:
+            tci.freeError(self.__error)
+            self.__error = None
+        if self.__env:
+            tci.freeEnvironment(self.__env)
+            self.__error = None
+        self.__state = None
 
     def commit(self):
         """Commit any pending transaction to the database."""
@@ -116,13 +156,12 @@ class Connection:
 
     def cursor(self) -> Cursor:
         """Return a new Cursor Object using the connection."""
-        return Cursor()
+        return Cursor(self.__con, self.__error)
+
+    def state(self) -> bool:
+        return self.__state
 
 
-"""
-Constructor for creating a connection to the database.
-"""
-
-
+# Constructor for creating a connection to the database
 def connect(url: str, user: str, password: str) -> Connection:
-    return Connection((url, user, password))
+    return Connection(url, user, password)
