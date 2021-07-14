@@ -30,6 +30,18 @@ class TestTransbase(unittest.TestCase):
         row = cursor.fetchone()
         self.assertEqual(cursor.state(), 0)
         # self.assertIsNotNone(row)
+        cursor.close()
+
+    def test_result_set_meta(self):
+        client = transbase.connect(*sample)
+        cursor = client.cursor()
+        cursor.execute("select * from cashbook")
+        self.assertEqual(len(cursor.description), 4)
+        self.assertEquals(
+            cursor.description,
+            [["nr", 16644], ["date", 17777], ["amount", 16645], ["comment", 16649]],
+        )
+        cursor.close()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 # https://www.python.org/dev/peps/pep-0249/
+from ctypes import sizeof
 from transbase import tci
 
 # GLOBALS
@@ -13,7 +14,7 @@ These objects represent a database cursor, which is used to manage the context o
 
 
 class Cursor:
-    """ "
+    """
     This read-only attribute is a sequence of 7-item sequences.
     Each of these sequences contains information describing one result column:
         - name
@@ -52,6 +53,7 @@ class Cursor:
         """
         # TODO params
         self.__state = tci.executeDirect(self.__resultset, operation, 1, 0)
+        self.__setResultSetMeta()
 
     def executemany(self, operation: str, seq_of_parameters=[]):
         """
@@ -106,8 +108,25 @@ class Cursor:
         return self.__state
 
     def __setResultSetMeta(self):
-        # get row size, column info
-        pass
+        no_cols = tci.resultset_attribute(self.__resultset, tci.TCI_ATTR_COLUMN_COUNT)
+        if no_cols > 0:
+            meta = []
+        for col in range(1, no_cols + 1):
+            colName = tci.resultset_string_attribute(
+                self.__resultset, tci.TCI_ATTR_COLUMN_NAME, col
+            )
+            colType = tci.resultset_attribute(
+                self.__resultset, tci.TCI_ATTR_COLUMN_TYPE, col
+            )
+            meta.append([colName, colType])
+
+        self.description = meta
+
+    def __setRowCount(self):
+        self.rowcoutn = tci.resultset_attribute(
+            self.__resultset,
+            tci.TCI_ATTR_ROWCOUNT,
+        )
 
     def __getRow(self):
         # get row data

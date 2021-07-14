@@ -8,12 +8,15 @@ if __name__ == "transbase.tci":
     else:
         tci = ct.CDLL("./.transbase/lib/libtci.so")
 
+sizeof = ct.sizeof
+
 TCIEnvironment = ct.POINTER(ct.c_void_p)
 TCIError = ct.POINTER(ct.c_void_p)
 TCIConnection = ct.POINTER(ct.c_void_p)
 TCIStatement = ct.POINTER(ct.c_void_p)
 TCIResultSet = ct.POINTER(ct.c_void_p)
 TCIState = ct.c_int
+attribute = ct.c_int
 
 """
 ALLOCATIONS
@@ -69,6 +72,26 @@ tci.TCIGetDataW.argtypes = [
 tci.TCIGetDataW.restype = TCIState
 getData = tci.TCIGetDataW
 
+
+getResultSetAttribute = tci.TCIGetResultSetAttributeW
+
+
+def resultset_attribute(resultset, attributekey, col=1):
+    attr = attribute(0)
+    tci.TCIGetResultSetAttributeW(
+        resultset, attributekey, col, ct.byref(attr), sizeof(attr), None
+    )
+    return attr.value
+
+
+def resultset_string_attribute(resultset, attributekey, col=1):
+    attr = ct.create_unicode_buffer(127)
+    tci.TCIGetResultSetAttributeW(
+        resultset, attributekey, col, attr, sizeof(attr), None
+    )
+    return attr.value
+
+
 """
 CLEANUP
 """
@@ -78,7 +101,7 @@ freeResultSet = tci.TCIFreeResultSetW
 
 tci.TCIFreeStatementW.argtypes = [TCIStatement]
 tci.TCIFreeStatementW.restype = TCIState
-freeStatement = tci.TCIFreeResultSetW
+freeStatement = tci.TCIFreeStatementW
 
 tci.TCIFreeConnectionW.argtypes = [TCIConnection]
 tci.TCIFreeConnectionW.restype = TCIState
@@ -98,3 +121,9 @@ CONSTANTS
 TCI_FETCH_NEXT = 1
 
 TCI_C_CHAR = 0x0100 | 0x1000 | 0x0A
+
+TCI_ATTR_COLUMN_COUNT = 7
+TCI_ATTR_COLUMN_NAME = 10
+TCI_ATTR_COLUMN_TYPE = 14
+TCI_ATTR_ROWCOUNT = 40
+TCI_ATTR_RECORDS_TOUCHED = 55
