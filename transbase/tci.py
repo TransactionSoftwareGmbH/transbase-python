@@ -60,17 +60,37 @@ tci.TCIFetchW.argtypes = [TCIResultSet, ct.c_int, ct.c_int, ct.c_int]
 tci.TCIFetchW.restype = TCIState
 fetch = tci.TCIFetchW
 
-tci.TCIGetDataW.argtypes = [
-    TCIResultSet,
-    ct.c_int,
-    ct.POINTER(ct.c_void_p),
-    ct.c_int,
-    ct.c_int,
-    ct.c_int,
-    ct.POINTER(ct.c_char),
-]
-tci.TCIGetDataW.restype = TCIState
+# tci.TCIGetDataW.argtypes = [
+#     TCIResultSet,
+#     ct.c_int,
+#     ct.c_wchar_p,
+#     ct.c_int,
+#     ct.c_void_p,
+#     ct.c_int,
+#     ct.POINTER(ct.c_char),
+# ]
+# tci.TCIGetDataW.restype = TCIState
 getData = tci.TCIGetDataW
+
+
+def get_data_as_string(resultset, colNo=1):
+    col = ct.c_int(colNo)
+    byteSize = attribute(0)
+    charLength = attribute(0)
+    isNull = ct.c_bool()
+    tci.TCIGetDataSizeW(resultset, col, TCI_C_CHAR, ct.byref(byteSize), None)
+    tci.TCIGetDataCharLengthW(resultset, col, ct.byref(charLength), None)
+    buffer = ct.create_string_buffer(charLength.value)
+    getData(
+        resultset,
+        col,
+        ct.byref(buffer),
+        ct.sizeof(buffer),
+        None,
+        TCI_C_CHAR,
+        ct.byref(isNull),
+    )
+    return None if isNull else buffer.value
 
 
 getResultSetAttribute = tci.TCIGetResultSetAttributeW
@@ -85,7 +105,7 @@ def resultset_attribute(resultset, attributekey, col=1):
 
 
 def resultset_string_attribute(resultset, attributekey, col=1):
-    attr = ct.create_unicode_buffer(127)
+    attr = ct.create_unicode_buffer("", 127)
     tci.TCIGetResultSetAttributeW(
         resultset, attributekey, col, attr, sizeof(attr), None
     )

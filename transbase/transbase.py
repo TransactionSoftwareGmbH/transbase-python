@@ -67,6 +67,7 @@ class Cursor:
         Fetch the next row of a query result set, returning a single sequence, or None when no more data is available.
         """
         self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
+        return self.__getRow()
 
     def fetchmany(self, size=None):
         """
@@ -129,8 +130,10 @@ class Cursor:
         )
 
     def __getRow(self):
-        # get row data
-        pass
+        row = []
+        for idx, _ in enumerate(self.description, start=1):
+            row.append(tci.get_data_as_string(self.__resultset, idx))
+        return row
 
     # def callproc( procname [, parameters ] )
 

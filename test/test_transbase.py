@@ -29,7 +29,7 @@ class TestTransbase(unittest.TestCase):
         cursor.execute("select * from cashbook")
         row = cursor.fetchone()
         self.assertEqual(cursor.state(), 0)
-        # self.assertIsNotNone(row)
+        self.assertIsNotNone(row)
         cursor.close()
 
     def test_result_set_meta(self):
@@ -37,9 +37,21 @@ class TestTransbase(unittest.TestCase):
         cursor = client.cursor()
         cursor.execute("select * from cashbook")
         self.assertEqual(len(cursor.description), 4)
-        self.assertEquals(
+        self.assertEqual(
             cursor.description,
             [["nr", 16644], ["date", 17777], ["amount", 16645], ["comment", 16649]],
+        )
+        cursor.close()
+
+    def test_fetch_data(self):
+        client = transbase.connect(*sample)
+        cursor = client.cursor()
+        cursor.execute("select * from cashbook")
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(
+            row,
+            [1, "2021-18-7", 3, "ommet"],
         )
         cursor.close()
 
