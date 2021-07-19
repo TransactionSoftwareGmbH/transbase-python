@@ -54,6 +54,7 @@ class Cursor:
         # TODO params
         self.__state = tci.executeDirect(self.__resultset, operation, 1, 0)
         self.__setResultSetMeta()
+        self.__setRowCount()
 
     def executemany(self, operation: str, seq_of_parameters=[]):
         """
@@ -67,7 +68,7 @@ class Cursor:
         Fetch the next row of a query result set, returning a single sequence, or None when no more data is available.
         """
         self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
-        return self.__getRow()
+        return self.__getRow() if self.__state == tci.TCI_SUCCESS else None
 
     def fetchmany(self, size=None):
         """
@@ -110,8 +111,7 @@ class Cursor:
 
     def __setResultSetMeta(self):
         no_cols = tci.resultset_attribute(self.__resultset, tci.TCI_ATTR_COLUMN_COUNT)
-        if no_cols > 0:
-            meta = []
+        meta = []
         for col in range(1, no_cols + 1):
             colName = tci.resultset_string_attribute(
                 self.__resultset, tci.TCI_ATTR_COLUMN_NAME, col
@@ -124,7 +124,7 @@ class Cursor:
         self.description = meta
 
     def __setRowCount(self):
-        self.rowcoutn = tci.resultset_attribute(
+        self.rowcount = tci.resultset_attribute(
             self.__resultset,
             tci.TCI_ATTR_ROWCOUNT,
         )

@@ -43,16 +43,21 @@ class TestTransbase(unittest.TestCase):
         )
         cursor.close()
 
-    def test_fetch_data(self):
+    def test_fetch_one_row(self):
         client = transbase.connect(*sample)
         cursor = client.cursor()
         cursor.execute("select * from cashbook")
         row = cursor.fetchone()
         self.assertIsNotNone(row)
-        self.assertEqual(
-            row,
-            [1, "2021-18-7", 3, "ommet"],
-        )
+        self.assertEqual(row, ["1", "2021-07-19 19:58:42.798", "100.00", "Withdrawal"])
+        cursor.close()
+
+    def test_fetch_one_return_none_if_no_data(self):
+        client = transbase.connect(*sample)
+        cursor = client.cursor()
+        cursor.execute("select * from cashbook where id < 0")
+        row = cursor.fetchone()
+        self.assertIsNone(row)
         cursor.close()
 
 

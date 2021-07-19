@@ -78,16 +78,16 @@ def get_data_as_string(resultset, colNo=1):
     byteSize = attribute(0)
     charLength = attribute(0)
     isNull = ct.c_bool()
-    tci.TCIGetDataSizeW(resultset, col, TCI_C_CHAR, ct.byref(byteSize), None)
+    tci.TCIGetDataSizeW(resultset, col, TCI_C_WCHAR, ct.byref(byteSize), None)
     tci.TCIGetDataCharLengthW(resultset, col, ct.byref(charLength), None)
-    buffer = ct.create_string_buffer(charLength.value)
+    buffer = ct.create_unicode_buffer(max(byteSize.value, charLength.value) + 1)
     getData(
         resultset,
         col,
         ct.byref(buffer),
         ct.sizeof(buffer),
         None,
-        TCI_C_CHAR,
+        TCI_C_WCHAR,
         ct.byref(isNull),
     )
     return None if isNull else buffer.value
@@ -138,9 +138,12 @@ freeEnvironment = tci.TCIFreeEnvironmentW
 """
 CONSTANTS
 """
+TCI_SUCCESS = 0
+
 TCI_FETCH_NEXT = 1
 
 TCI_C_CHAR = 0x0100 | 0x1000 | 0x0A
+TCI_C_WCHAR = TCI_C_CHAR | (0x2000)
 
 TCI_ATTR_COLUMN_COUNT = 7
 TCI_ATTR_COLUMN_NAME = 10
