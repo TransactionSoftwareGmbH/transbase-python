@@ -1,5 +1,4 @@
 # https://www.python.org/dev/peps/pep-0249/
-from ctypes import sizeof
 from transbase import tci
 
 # GLOBALS
@@ -74,7 +73,15 @@ class Cursor:
         """
         Fetch the next set of rows of a query result, returning a sequence of sequences (e.g. a list of tuples). An empty sequence is returned when no more rows are available.
         """
-        pass
+        result = []
+        count = size if size  != None else self.arraysize
+        for _ in range(0, count):
+            # can be optimized later with tci fetch many...
+            self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
+            if(self.__state == tci.TCI_SUCCESS):
+                result.append(self.__getRow()) 
+
+        return result
 
     def fetchall(self):
         """

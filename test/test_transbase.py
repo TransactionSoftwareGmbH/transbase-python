@@ -46,10 +46,10 @@ class TestTransbase(unittest.TestCase):
     def test_fetch_one_row(self):
         client = transbase.connect(*sample)
         cursor = client.cursor()
-        cursor.execute("select * from cashbook")
+        cursor.execute("select nr, amount, comment from cashbook")
         row = cursor.fetchone()
         self.assertIsNotNone(row)
-        self.assertEqual(row, ["1", "2021-07-19 19:58:42.798", "100.00", "Withdrawal"])
+        self.assertEqual(row, ["1", "100.00", "Withdrawal"])
         cursor.close()
 
     def test_fetch_one_return_none_if_no_data(self):
@@ -59,6 +59,35 @@ class TestTransbase(unittest.TestCase):
         row = cursor.fetchone()
         self.assertIsNone(row)
         cursor.close()
+
+    def test_fetch_many(self):
+        client = transbase.connect(*sample)   
+        cursor = client.cursor()
+        cursor.execute("select * from cashbook")
+        rows = cursor.fetchmany(2)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0][0], "1")
+        self.assertEqual(rows[1][0], "2")
+
+    def test_fetch_many_empty_sequence_if_no_data(self):
+        client = transbase.connect(*sample)   
+        cursor = client.cursor()
+        cursor.execute("select * from cashbook where id < 0")
+        rows = cursor.fetchmany()
+        self.assertListEqual(rows, [])
+        
+
+    def test_fetch_many_using_arraysize(self):
+        client = transbase.connect(*sample)   
+        cursor = client.cursor()
+        cursor.execute("select * from cashbook")
+        cursor.arraysize = 2
+        rows = cursor.fetchmany()
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0][0], "1")
+        self.assertEqual(rows[1][0], "2")
+        rows = cursor.fetchmany(1)
+        self.assertEqual(len(rows), 1)
 
 
 if __name__ == "__main__":
