@@ -60,6 +60,7 @@ class Cursor:
         Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters.
         """
         # for loop, optimize later
+        # TODO
         pass
 
     def fetchone(self):
@@ -72,14 +73,19 @@ class Cursor:
     def fetchmany(self, size=None):
         """
         Fetch the next set of rows of a query result, returning a sequence of sequences (e.g. a list of tuples). An empty sequence is returned when no more rows are available.
+        Set size to -1 to fetch all remaining, see fetchall.
         """
         result = []
-        count = size if size  != None else self.arraysize
-        for _ in range(0, count):
+        count = size if size != None else self.arraysize
+        i = 0
+        while count < 0 or i < count:
+            i += 1
             # can be optimized later with tci fetch many...
             self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
-            if(self.__state == tci.TCI_SUCCESS):
-                result.append(self.__getRow()) 
+            if self.__state == tci.TCI_SUCCESS:
+                result.append(self.__getRow())
+            else:
+                break
 
         return result
 
@@ -87,18 +93,20 @@ class Cursor:
         """
         Fetch all (remaining) rows of a query result, returning them as a sequence of sequences (e.g. a list of tuples). Note that the cursor's arraysize attribute can affect the performance of this operation.
         """
-        pass
+        return self.fetchmany(-1)
 
     def setinputsizes(self, sizes):
         """
         This can be used before a call to .execute*() to predefine memory areas for the operation's parameters.
         """
+        # TODO
         pass
 
     def setoutputsize(self, size, column=None):
         """
         Set a column buffer size for fetches of large columns (e.g. LONGs, BLOBs, etc.). The column is specified as an index into the result sequence. Not specifying the column will set the default size for all large columns in the cursor.
         """
+        # TODO
         pass
 
     def close(self):
@@ -177,10 +185,12 @@ class Connection:
 
     def commit(self):
         """Commit any pending transaction to the database."""
+        # TODO
         pass
 
     def rollback(self):
         """This method is optional since not all databases provide transaction support"""
+        # TODO
         pass
 
     def cursor(self) -> Cursor:
