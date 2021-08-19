@@ -1,6 +1,5 @@
 # https://www.python.org/dev/peps/pep-0249/
 from collections import Mapping
-from typing import Mapping
 from transbase import tci
 
 # GLOBALS
@@ -11,7 +10,9 @@ paramstyle = "qmark,named"
 
 class Cursor:
     """
-    These objects represent a database cursor, which is used to manage the context of a fetch operation"""
+    These objects represent a database cursor,
+    which is used to manage the context of a fetch operation
+    """
 
     """
     This read-only attribute is a sequence of 7-item sequences.
@@ -31,7 +32,8 @@ class Cursor:
     """
     rowcount = 0
     """
-    This read/write attribute specifies the number of rows to fetch at a time with .fetchmany(). It defaults to 1 meaning to fetch a single row at a time
+    This read/write attribute specifies the number of rows to fetch at a time with .fetchmany().
+    It defaults to 1 meaning to fetch a single row at a time
     """
     arraysize = 1
 
@@ -72,7 +74,8 @@ class Cursor:
 
     def executemany(self, operation: str, seq_of_parameters=[]):
         """
-        Prepare a database operation (query or command) and then execute it against all parameter sequences or mappings found in the sequence seq_of_parameters.
+        Prepare a database operation (query or command) and then execute it against all parameter sequences
+        or mappings found in the sequence seq_of_parameters.
         """
         # for loop, optimize later
         # TODO
@@ -92,11 +95,12 @@ class Cursor:
 
     def fetchmany(self, size=None):
         """
-        Fetch the next set of rows of a query result, returning a sequence of sequences (e.g. a list of tuples). An empty sequence is returned when no more rows are available.
+        Fetch the next set of rows of a query result, returning a sequence of sequences (e.g. a list of tuples).
+        An empty sequence is returned when no more rows are available.
         Set size to -1 to fetch all remaining, see fetchall.
         """
         result = []
-        count = size if size != None else self.arraysize
+        count = size if size is not None else self.arraysize
         i = 0
         while count < 0 or i < count:
             i += 1
@@ -113,7 +117,8 @@ class Cursor:
 
     def fetchall(self):
         """
-        Fetch all (remaining) rows of a query result, returning them as a sequence of sequences (e.g. a list of tuples). Note that the cursor's arraysize attribute can affect the performance of this operation.
+        Fetch all (remaining) rows of a query result, returning them as a sequence of sequences (e.g. a list of tuples).
+        Note that the cursor's arraysize attribute can affect the performance of this operation.
         """
         return self.fetchmany(-1)
 
@@ -126,7 +131,8 @@ class Cursor:
 
     def setoutputsize(self, size, column=None):
         """
-        Set a column buffer size for fetches of large columns (e.g. LONGs, BLOBs, etc.). The column is specified as an index into the result sequence. Not specifying the column will set the default size for all large columns in the cursor.
+        Set a column buffer size for fetches of large columns (e.g. LONGs, BLOBs, etc.).
+        The column is specified as an index into the result sequence. Not specifying the column will set the default size for all large columns in the cursor.
         """
         # TODO (optional api)
         pass
