@@ -4,9 +4,9 @@ import sys
 if __name__ == "transbase.tci":
     # Load the shared library into c types.
     if sys.platform.startswith("win"):
-        tci = ct.CDLL("./.transbase/lib/tci.dll")
+        tci = ct.CDLL("./lib/tci.dll")
     else:
-        tci = ct.CDLL("./.transbase/lib/libtci.so")
+        tci = ct.CDLL("./lib/libtci.so")
 
 sizeof = ct.sizeof
 
