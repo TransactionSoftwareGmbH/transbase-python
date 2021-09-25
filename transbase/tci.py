@@ -1,12 +1,21 @@
 import ctypes as ct
 import sys
+from transbase.error import DatabaseError
+import os.path
 
 if __name__ == "transbase.tci":
+    dll_name = "tci.dll" if sys.platform.startswith("win") else "libtci.so"
+    dllabspath = (
+        os.path.dirname(os.path.abspath(__file__))
+        + os.path.sep
+        + ".."
+        + os.path.sep
+        + "lib"
+        + os.path.sep
+        + dll_name
+    )
     # Load the shared library into c types.
-    if sys.platform.startswith("win"):
-        tci = ct.CDLL("./lib/tci.dll")
-    else:
-        tci = ct.CDLL("./lib/libtci.so")
+    tci = ct.CDLL(dllabspath)
 
 sizeof = ct.sizeof
 
@@ -16,6 +25,7 @@ TCIConnection = ct.POINTER(ct.c_void_p)
 TCIStatement = ct.POINTER(ct.c_void_p)
 TCIResultSet = ct.POINTER(ct.c_void_p)
 TCIState = ct.c_int
+TCIErrorCode = ct.c_int
 attribute = ct.c_int
 
 """
@@ -52,24 +62,69 @@ tci.TCILoginW.argtypes = [TCIConnection, ct.c_wchar_p, ct.c_wchar_p]
 tci.TCILoginW.restype = TCIState
 login = tci.TCILoginW
 
+
+tci.TCIGetErrorW.argtypes = [
+    TCIError,
+    ct.c_int,
+    ct.c_int,
+    ct.c_wchar_p,
+    ct.c_int,
+    TCIErrorCode,
+    ct.c_wchar_p,
+]
+tci.TCIGetErrorW.restype = TCIState
+getError = tci.TCIGetErrorW
+
+
+def handle_error(error):
+    message = ct.create_unicode_buffer("", 1024)
+    code = TCIErrorCode()
+    sql_code = ct.create_unicode_buffer("", 1024)
+    getError(
+        error,
+        1,
+        1,
+        message,
+        sizeof(message),
+        code,
+        sql_code,
+    )
+    raise DatabaseError(message)
+
+
 tci.TCIExecuteDirectW.argtypes = [TCIResultSet, ct.c_wchar_p, ct.c_int, ct.c_int]
 tci.TCIExecuteDirectW.restype = TCIState
 executeDirect = tci.TCIExecuteDirectW
+
+tci.TCIExecuteW.argtypes = [TCIResultSet, ct.c_int, ct.c_int]
+tci.TCIExecuteW.restype = TCIState
+execute = tci.TCIExecuteW
+
+tci.TCIPrepareW.argtypes = [TCIStatement, ct.c_wchar_p]
+tci.TCIPrepareW.restype = TCIState
+prepare = tci.TCIPrepareW
 
 tci.TCIFetchW.argtypes = [TCIResultSet, ct.c_int, ct.c_int, ct.c_int]
 tci.TCIFetchW.restype = TCIState
 fetch = tci.TCIFetchW
 
-# tci.TCIGetDataW.argtypes = [
-#     TCIResultSet,
-#     ct.c_int,
-#     ct.c_wchar_p,
-#     ct.c_int,
-#     ct.c_void_p,
-#     ct.c_int,
-#     ct.POINTER(ct.c_char),
-# ]
-# tci.TCIGetDataW.restype = TCIState
+
+def set_param(resultset, index, value):
+    str_value = ct.c_wchar_p(str(value))
+    is_null = ct.c_int(-1) if value is None else None
+    return tci.TCISetDataW(
+        resultset, index, str_value, sizeof(str_value), TCI_C_WCHAR, is_null
+    )
+
+
+def set_param_by_name(resultset, name, value):
+    str_value = ct.c_wchar_p(str(value))
+    is_null = ct.c_int(-1) if value is None else None
+    return tci.TCISetDataByNameW(
+        resultset, name, str_value, sizeof(str_value), TCI_C_WCHAR, is_null
+    )
+
+
 getData = tci.TCIGetDataW
 
 
@@ -139,11 +194,13 @@ freeEnvironment = tci.TCIFreeEnvironmentW
 CONSTANTS
 """
 TCI_SUCCESS = 0
+TCI_NO_DATA_FOUND = 100
 
 TCI_FETCH_NEXT = 1
 
 TCI_C_CHAR = 0x0100 | 0x1000 | 0x0A
 TCI_C_WCHAR = TCI_C_CHAR | (0x2000)
+TCI_C_INT_4 = 0x0100 | 0x03
 
 TCI_ATTR_COLUMN_COUNT = 7
 TCI_ATTR_COLUMN_NAME = 10

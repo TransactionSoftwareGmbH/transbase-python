@@ -1,3 +1,4 @@
+from transbase.error import DatabaseError
 import unittest
 from transbase import transbase
 
@@ -6,9 +7,10 @@ sample = ("//localhost:2024/sample", "tbadmin", "")
 
 class TestTransbase(unittest.TestCase):
     def test_connect_error(self):
-        client = transbase.connect("//localhost:2024/what", "tbadmin", "")
-        self.assertRaises(ValueError)
-        self.assertEqual(client.state(), -1)
+        try:
+            transbase.connect("//localhost:2024/what", "tbadmin", "")
+        except Exception as e:
+            self.assertIsInstance(e, DatabaseError)
 
     def test_connect_success(self):
         client = transbase.connect(*sample)
@@ -55,7 +57,7 @@ class TestTransbase(unittest.TestCase):
     def test_fetch_one_return_none_if_no_data(self):
         client = transbase.connect(*sample)
         cursor = client.cursor()
-        cursor.execute("select * from cashbook where id < 0")
+        cursor.execute("select * from cashbook where nr < 0")
         row = cursor.fetchone()
         self.assertIsNone(row)
         cursor.close()
@@ -72,7 +74,7 @@ class TestTransbase(unittest.TestCase):
     def test_fetch_many_empty_sequence_if_no_data(self):
         client = transbase.connect(*sample)
         cursor = client.cursor()
-        cursor.execute("select * from cashbook where id < 0")
+        cursor.execute("select * from cashbook where nr < 0")
         rows = cursor.fetchmany()
         self.assertListEqual(rows, [])
 
@@ -100,6 +102,7 @@ class TestTransbase(unittest.TestCase):
         cursor = client.cursor()
         cursor.execute("select * from cashbook")
         rows = cursor.fetchall()
+        print(rows)
         self.assertEqual(len(rows), 4)
         self.assertEqual(len(rows[0]), 4)
 
@@ -112,6 +115,39 @@ class TestTransbase(unittest.TestCase):
         rows = cursor.fetchall()
         self.assertEqual(len(rows), 3)
         self.assertEqual(rows[0][0], "2")
+
+    def test_execute_positional_parameters(self):
+        client = transbase.connect(*sample)
+        cursor = client.cursor()
+        cursor.execute(
+            "select * from cashbook where nr > ? and comment = ?",
+            ["0", "Withdrawal"],
+        )
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        cursor.close()
+
+    def test_execute_named_parameters(self):
+        client = transbase.connect(*sample)
+        cursor = client.cursor()
+        cursor.execute(
+            "select * from cashbook where nr > :nr and comment = :comment",
+            {"nr": "0", "comment": "Withdrawal"},
+        )
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        cursor.close()
+
+    def test_execute_with_null_parameters(self):
+        client = transbase.connect(*sample)
+        cursor = client.cursor()
+        cursor.execute(
+            "select * from cashbook where comment = ?",
+            [None],
+        )
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        cursor.close()
 
 
 if __name__ == "__main__":

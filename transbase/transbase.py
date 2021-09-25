@@ -1,4 +1,6 @@
 # https://www.python.org/dev/peps/pep-0249/
+from collections import Mapping
+from typing import Mapping
 from transbase import tci
 
 # GLOBALS
@@ -7,12 +9,10 @@ threadsafety = 0
 paramstyle = "qmark,named"
 
 
-"""
-These objects represent a database cursor, which is used to manage the context of a fetch operation
-"""
-
-
 class Cursor:
+    """
+    These objects represent a database cursor, which is used to manage the context of a fetch operation"""
+
     """
     This read-only attribute is a sequence of 7-item sequences.
     Each of these sequences contains information describing one result column:
@@ -39,8 +39,9 @@ class Cursor:
     __resultset = tci.TCIResultSet()
 
     def __init__(self, connection, error):
-        self.__state = tci.allocateStatement(connection, error, self.__statement)
-        self.__state = tci.allocateResultSet(self.__statement, error, self.__resultset)
+        self.__error = error
+        self.__call(tci.allocateStatement(connection, error, self.__statement))
+        self.__call(tci.allocateResultSet(self.__statement, error, self.__resultset))
 
     def __del__(self):
         self.close()
@@ -50,8 +51,22 @@ class Cursor:
         Prepare and execute a database operation (query or command).
         Parameters may be provided as sequence or mapping and will be bound to variables in the operation
         """
-        # TODO params
-        self.__state = tci.executeDirect(self.__resultset, operation, 1, 0)
+        # execute query direct if no parameters are given
+        if params is None:
+            self.__call(tci.executeDirect(self.__resultset, operation, 1, 0))
+
+        # prepare statement and set positional or named parameters before execution
+        else:
+            self.__call(tci.prepare(self.__statement, operation))
+            if isinstance(params, Mapping):
+                for name, value in params.items():
+                    self.__call(tci.set_param_by_name(self.__resultset, name, value))
+            else:
+                for idx, param in enumerate(params, start=1):
+                    self.__call(tci.set_param(self.__resultset, idx, param))
+
+            self.__call(tci.execute(self.__resultset, 1, 0))
+
         self.__setResultSetMeta()
         self.__setRowCount()
 
@@ -68,7 +83,12 @@ class Cursor:
         Fetch the next row of a query result set, returning a single sequence, or None when no more data is available.
         """
         self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
-        return self.__getRow() if self.__state == tci.TCI_SUCCESS else None
+        if self.__state == tci.TCI_SUCCESS:
+            return self.__getRow()
+        elif self.__state != tci.TCI_NO_DATA_FOUND:
+            return self.__call(self.__state)
+        else:
+            return None
 
     def fetchmany(self, size=None):
         """
@@ -84,6 +104,8 @@ class Cursor:
             self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
             if self.__state == tci.TCI_SUCCESS:
                 result.append(self.__getRow())
+            elif self.__state != tci.TCI_NO_DATA_FOUND:
+                self.__call(self.__state)
             else:
                 break
 
@@ -99,14 +121,14 @@ class Cursor:
         """
         This can be used before a call to .execute*() to predefine memory areas for the operation's parameters.
         """
-        # TODO
+        # TODO (optional api)
         pass
 
     def setoutputsize(self, size, column=None):
         """
         Set a column buffer size for fetches of large columns (e.g. LONGs, BLOBs, etc.). The column is specified as an index into the result sequence. Not specifying the column will set the default size for all large columns in the cursor.
         """
-        # TODO
+        # TODO (optional api)
         pass
 
     def close(self):
@@ -150,6 +172,11 @@ class Cursor:
             row.append(tci.get_data_as_string(self.__resultset, idx))
         return row
 
+    def __call(self, state):
+        self.__state = state
+        if self.__state != tci.TCI_SUCCESS:
+            tci.handle_error(self.__error)
+
     # def callproc( procname [, parameters ] )
 
 
@@ -162,8 +189,8 @@ class Connection:
         tci.allocateEnvironment(self.__env)
         tci.allocateError(self.__env, self.__error)
         tci.allocateConnection(self.__env, self.__error, self.__con)
-        self.__state = tci.connect(self.__con, url)
-        self.__state = tci.login(self.__con, user, password)
+        self.__call(tci.connect(self.__con, url))
+        self.__call(tci.login(self.__con, user, password))
 
     def __del__(self):
         self.close()
@@ -185,12 +212,12 @@ class Connection:
 
     def commit(self):
         """Commit any pending transaction to the database."""
-        # TODO
+        # TODO (optional api)
         pass
 
     def rollback(self):
         """This method is optional since not all databases provide transaction support"""
-        # TODO
+        # TODO (optional api)
         pass
 
     def cursor(self) -> Cursor:
@@ -199,6 +226,11 @@ class Connection:
 
     def state(self) -> bool:
         return self.__state
+
+    def __call(self, state):
+        self.__state = state
+        if self.__state != tci.TCI_SUCCESS:
+            tci.handle_error(self.__error)
 
 
 # Constructor for creating a connection to the database
