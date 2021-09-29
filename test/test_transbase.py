@@ -6,6 +6,26 @@ sample = ("//localhost:2024/sample", "tbadmin", "")
 
 
 class TestTransbase(unittest.TestCase):
+    def setUp(self):
+        client = transbase.connect(sample)
+        cursor = client.cursor()
+        """
+    cursor.execute("create table ${TABLE}
+      (
+        nr 	integer not null primary key auto_increment,
+        date 	timestamp not null default currentdate,
+        amount 	numeric(10,2) not null,
+        comment varchar(*),
+      );");
+    cursor.query(insert`values (default, default, 100, 'Withdrawal')`);
+    cursor.query(insert`values (default, currentdate, -9.50, 'Lunch🚀')`);
+    cursor.query(insert`(amount, comment) values (-5.5, 'Drink');`);
+    cursor.query(insert`values (default, '2021-02-20', 0, '');`);
+    cursor.query(insert`(amount, comment) values (-2.5, null);`);
+        cursor.execute("insert into ")
+        """
+        cursor.close()
+
     def test_connect_error(self):
         try:
             transbase.connect("//localhost:2024/what", "tbadmin", "")
