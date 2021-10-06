@@ -4,18 +4,26 @@ from transbase.error import DatabaseError
 import os.path
 
 if __name__ == "transbase.tci":
-    dll_name = "tci.dll" if sys.platform.startswith("win") else "libtci.so"
-    dllabspath = (
+    lib_name = None
+
+    if sys.platform.startswith("win"):
+        lib_name = "tci.dll"
+    elif sys.platform.startswith("darwin"):
+        lib_name = "libtci.dylib"
+    else:
+        lib_name = "libtci.so"
+
+    lib_absolute_path = (
         os.path.dirname(os.path.abspath(__file__))
         + os.path.sep
         + ".."
         + os.path.sep
         + "lib"
         + os.path.sep
-        + dll_name
+        + lib_name
     )
     # Load the shared library into c types.
-    tci = ct.CDLL(dllabspath)
+    tci = ct.CDLL(lib_absolute_path)
 
 sizeof = ct.sizeof
 
@@ -69,7 +77,7 @@ tci.TCIGetErrorW.argtypes = [
     ct.c_int,
     ct.c_wchar_p,
     ct.c_int,
-    TCIErrorCode,
+    ct.POINTER(TCIErrorCode),
     ct.c_wchar_p,
 ]
 tci.TCIGetErrorW.restype = TCIState
@@ -89,7 +97,7 @@ def handle_error(error):
         code,
         sql_code,
     )
-    raise DatabaseError(message)
+    raise DatabaseError(code.value, message.value)
 
 
 tci.TCIExecuteDirectW.argtypes = [TCIResultSet, ct.c_wchar_p, ct.c_int, ct.c_int]
