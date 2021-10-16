@@ -27,3 +27,12 @@ based on tci.
 ### Wheel including tci sdk
 
 - `py setup.py bdist_wheel`
+
+Source distribution: `py setup.py sdist`
+
+### Manual Release
+
+Linux wheels need to be renamed matching https://www.python.org/dev/peps/pep-0600/
+(manylinux\_${GLIBCMAJOR}\_${GLIBCMINOR}\_${ARCH})
+
+- `twine upload (--repository testpypi) dist/*`
