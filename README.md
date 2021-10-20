@@ -6,33 +6,89 @@
 </p>
 
 A python client for [transbase](https://www.transaction.de/loesungen/transbase-ressourcenoptimierte-hochleistungsdatenbank)
-based on tci.
+based on tci implementing python database api v2.0 ([PEP-249](https://www.python.org/dev/peps/pep-0249/))
 
-## Development
+|               |       |
+| ------------- | ----: |
+| **Python**    |   3.9 |
+| **Transbase** | 8.4.1 |
 
-- install python 3.9
-- it is recommended to install virtualenv
+## Install
+
+Transbase is available in [PyPi](https://test.pypi.org/project/transbase/)
+
+```
+pip install transbase
+```
+
+## Example
+
+```python
+from transbase import transbase
+
+# change to your transbase connection
+client = transbase.connect("//localhost:8024/dbtest", "admin", "admin")
+
+cursor = client.cursor()
+
+cursor.execute("select * from systable")
+row = cursor.fetchone()
+print(row)
+
+cursor.close()
+client.close()
+```
+
+DML statements (insert, update and delete) are executed similar. The number of affected rows can be obtained by `.rowcount`
+
+```python
+cursor.execute("insert into cashbook values (42, default, 100, 'INSERT');");
+print(cursor.rowcount) # -> 1
+```
+
+Query parameters can be passed as second argument
+
+```python
+# pass parameters as object matching named parameters
+cursor.execute(
+    "select * from cashbook where nr >= :nr and comment like :comment",
+    {"nr": "1", "comment": "Lu%"},
+)
+
+# or as an array for positional parameters
+cursor.execute(
+    "select * from cashbook where nr >= ? and comment like ?",
+    ["1", "Lu%"]
+)
+```
+
+## Contribution
+
+VS-Code Editor with python extension is recommended.
+
+### Development
+
+- install python 3.9 (TODO: -> 3.11)
+- it is recommended to install and use virtualenv
   `py -m pip install --user virtualenv`
 - Install required dependencies
   `py -m pip install flake8 coverage requests`
 - Download tci lib `py setup.py get_lib`
 
-## Test
+### Test
 
-- `py -m unittest`
-- or use vs-code test explorer
+- `py -m unittest` or use vs-code test explorer
 
-## Build
+### Build
 
-### Wheel including tci sdk
+Source distribution and wheel including tci sdk
 
-- `py setup.py bdist_wheel`
+- `py setup.py sdist bdist_wheel`
 
-Source distribution: `py setup.py sdist`
+#### Manual Release
 
-### Manual Release
+Linux wheels need to be renamed matching [PEP-600](https://www.python.org/dev/peps/pep-0600/)
 
-Linux wheels need to be renamed matching https://www.python.org/dev/peps/pep-0600/
-(manylinux\_${GLIBCMAJOR}\_${GLIBCMINOR}\_${ARCH})
+To publish manually to pypi (or testP) run
 
-- `twine upload (--repository testpypi) dist/*`
+- `twine upload [--repository testpypi] dist/*`
