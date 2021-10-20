@@ -3,6 +3,7 @@ import requests
 import tarfile
 import platform
 import sys
+from pathlib import Path
 
 
 def get_lib_name():
@@ -48,6 +49,8 @@ setup(
     },
     version="0.0.2",
     description="Python Transbase Client",
+    long_description=(Path(__file__).parent / "README.md").read_text(),
+    long_description_content_type="text/markdown",
     url="https://www.transaction.de",
     author="Daniel Loibl",
     author_email="daniel.loibl@gmail.com",

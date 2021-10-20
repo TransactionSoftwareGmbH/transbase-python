@@ -51,7 +51,7 @@ jobs:
           name: release
           path: dist/
       - name: Publish 📦 to TestPyPI
-        #if: contains(github.ref, 'rc')
+        if: contains(github.ref, 'rc')
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
