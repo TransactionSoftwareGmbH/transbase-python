@@ -97,7 +97,7 @@ def handle_error(error):
         code,
         sql_code,
     )
-    raise DatabaseError(code.value, message.value)
+    raise DatabaseError(code.value, message.value, sql_code.value)
 
 
 tci.TCIExecuteDirectW.argtypes = [TCIResultSet, ct.c_wchar_p, ct.c_int, ct.c_int]

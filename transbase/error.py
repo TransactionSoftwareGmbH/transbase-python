@@ -17,10 +17,11 @@ class DatabaseError(Error):
     Exception raised for errors that are related to the database.Subclass of Error.
     """
 
-    def __init__(self, error_code, message=""):
+    def __init__(self, error_code, message="", sql_code=None):
         self.error_code = error_code
         self.traceback = sys.exc_info()
-        msg = f"[{error_code}] {message}"
+        sql = f"SQL-{sql_code}" if sql_code is not None else ""
+        msg = f"TCI-{error_code}: {sql}: {message}"
         super().__init__(msg)
 
 
