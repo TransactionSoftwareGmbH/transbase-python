@@ -46,9 +46,11 @@ setup(
     package_data={
         "transbase": [f"../lib/{get_lib_name()}"],
     },
-    version="0.0.1",
+    version="0.0.2",
     description="Python Transbase Client",
+    url="https://www.transaction.de",
     author="Daniel Loibl",
+    author_email="daniel.loibl@gmail.com",
     license="MIT",
     test_suite="test",
     cmdclass={
