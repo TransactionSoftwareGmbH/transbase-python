@@ -62,6 +62,17 @@ cursor.execute(
 )
 ```
 
+## Troubleshooting
+
+### TCI SDK not found
+
+If no prebuild binary wheel could be found on PyPi for your os or python version you can simply download it after installation by
+running the python script (added with installation of this package)
+
+```
+install_tci
+```
+
 ## Contribution
 
 VS-Code Editor with python extension is recommended.

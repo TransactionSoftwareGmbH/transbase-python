@@ -1,9 +1,7 @@
 from setuptools import setup, Command
-import requests
-import tarfile
-import platform
-import sys
+from transbase.install import download_tci
 from pathlib import Path
+import sys
 
 
 def get_lib_name():
@@ -30,19 +28,13 @@ class DownloadSdkCommand(Command):
         pass
 
     def run(self):
-        version = "8.4.1"
-        os_platform = platform.system().lower()
-        os_arch = "x64" if sys.maxsize > 2 ** 32 else "x86"
-        url = f"https://www.transaction.de/transbase/{version}/{os_platform}_{os_arch}/sdk/transbase-{version}_{os_platform}_{os_arch}_sdk.tgz"
-        print("downloading from ", url)
-        response = requests.get(url, stream=True)
-        file = tarfile.open(fileobj=response.raw, mode="r|gz")
-        file.extractall(path=".")
+        download_tci(".")
 
 
 setup(
     name="transbase",
     packages=["transbase"],
+    scripts=["scripts/install_tci"],
     has_ext_modules=lambda: True,
     package_data={
         "transbase": [f"../lib/{get_lib_name()}"],
@@ -60,4 +52,5 @@ setup(
         "get_lib": DownloadSdkCommand,
     },
     python_requires=">=3.9",
+    install_requires=["requests"],
 )

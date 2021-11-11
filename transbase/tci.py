@@ -1,11 +1,11 @@
 import ctypes as ct
 import sys
-from transbase.error import DatabaseError
+from transbase.error import DatabaseError, Error
 import os.path
 
-if __name__ == "transbase.tci":
-    lib_name = None
 
+def find_tci_lib():
+    lib_name = None
     if sys.platform.startswith("win"):
         lib_name = "tci.dll"
     elif sys.platform.startswith("darwin"):
@@ -13,17 +13,34 @@ if __name__ == "transbase.tci":
     else:
         lib_name = "libtci.so"
 
-    lib_absolute_path = (
-        os.path.dirname(os.path.abspath(__file__))
-        + os.path.sep
-        + ".."
-        + os.path.sep
-        + "lib"
-        + os.path.sep
-        + lib_name
+    packageDirectory = os.path.dirname(os.path.abspath(__file__)) + os.path.sep
+    search_locations = [
+        (
+            packageDirectory + "lib" + os.path.sep + lib_name
+        ),  # absolute site-packages/transbase/lib/ (e.g. when intalled with install_tci)
+        (
+            packageDirectory + ".." + os.path.sep + "lib" + os.path.sep + lib_name
+        ),  # packaged whithin wheel ../lib
+        (
+            "." + os.path.sep + "lib" + os.path.sep + lib_name
+        ),  # ./lib for local development, or if download manually there
+    ]
+
+    for path in search_locations:
+        if os.path.isfile(path):
+            return path
+    raise Error(
+        "\033[91m"
+        + f"Unable to find tci sdk ({lib_name}) searched in {search_locations}.\n Please run 'install_tci' command."
+        + "\033[0m"
     )
-    # Load the shared library into c types.
-    tci = ct.CDLL(lib_absolute_path)
+
+
+# load tci dll
+if __name__ == "transbase.tci":
+    tci = ct.CDLL(find_tci_lib())
+    print(tci)
+
 
 sizeof = ct.sizeof
 
