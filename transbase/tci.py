@@ -39,8 +39,6 @@ def find_tci_lib():
 # load tci dll
 if __name__ == "transbase.tci":
     tci = ct.CDLL(find_tci_lib())
-    print(tci)
-
 
 sizeof = ct.sizeof
 
