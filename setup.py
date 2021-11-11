@@ -45,7 +45,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://www.transaction.de",
     author="Daniel Loibl",
-    author_email="daniel.loibl@gmail.com",
+    author_email="loibl@transaction.de",
     license="MIT",
     test_suite="test",
     cmdclass={
