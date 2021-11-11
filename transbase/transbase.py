@@ -148,6 +148,9 @@ class Cursor:
             tci.freeStatement(self.__statement)
             self.__statement = None
         self.__state = None
+        self.description = None
+        self.rowcount = 0
+        self.arraysize = 1
 
     def state(self):
         return self.__state
@@ -213,7 +216,7 @@ class Connection:
             self.__error = None
         if self.__env:
             tci.freeEnvironment(self.__env)
-            self.__error = None
+            self.__env = None
         self.__state = None
 
     def commit(self):

@@ -78,6 +78,21 @@ class TestTransbase(unittest.TestCase):
         client.close()
         self.assertEqual(client.state(), None)
 
+    def test_multiple_cursor_connections_assignments(self):
+        client = transbase.connect(*db)
+        cursor = client.cursor()
+        cursor.execute(SELECT_ALL)
+        cursor.close()
+        cursor = client.cursor()
+        cursor.close()
+        client.close()
+
+        client = transbase.connect(*db)
+        cursor = client.cursor()
+        cursor.execute(SELECT_ALL)
+        cursor.close()
+        client.close()
+
     def test_execute_query(self):
         cursor = self.client.cursor()
         self.assertIsInstance(cursor, transbase.Cursor)
