@@ -1,4 +1,5 @@
 import os
+from build.lib.transbase.transbase import Cursor
 from transbase.error import DatabaseError
 import unittest
 from transbase import transbase
@@ -6,10 +7,11 @@ import uuid
 
 db_url = os.getenv("DB_URL", "//localhost:2024/sample")
 db_user = os.getenv("DB_USER", "tbadmin")
-db_password = os.getenv("DB_PASSWORD", "")
+db_password = os.getenv("DB_PASSWORD", "admin")
 db = (db_url, db_user, db_password)
 
 TABLE = "cashbook_py_" + str(uuid.uuid4())[0 - 7]
+TABLE_DATA_TYPES_TEST = TABLE + "_data_types"
 
 SELECT_ALL = f"select * from {TABLE}"
 
@@ -49,6 +51,7 @@ class TestTransbase(unittest.TestCase):
             client = transbase.connect(*db)
             cursor = client.cursor()
             cursor.execute(f"drop table {TABLE};")
+            cursor.execute(f"drop table {TABLE_DATA_TYPES_TEST};")
             cursor.close()
             client.close()
         except Exception as e:
@@ -207,6 +210,128 @@ class TestTransbase(unittest.TestCase):
         )
         row = cursor.fetchone()
         self.assertIsNotNone(row)
+        cursor.close()
+
+    def test_fetch_type_cast(self):
+        self.prepare_table_all_types()
+        cursor = self.client.cursor()
+
+        cursor.execute(f"select * from {TABLE_DATA_TYPES_TEST}")
+        row = cursor.fetchone()
+        self.assertEqual(
+            row,
+            [
+                "120",
+                "32000",
+                "2000111222",
+                "4000111222333",
+                "5.20",
+                "555.22",
+                "0110",
+                "Clob",
+                "Varchar(*)",
+                "Char(*)",
+                "String",
+                "0110",
+                "0110110",
+                "0110",
+                "true",
+                "2002-12",
+                "2002-12-24",
+                "17:35:10",
+                "2002-12-24 17:35:10.250",
+                "2-06",
+                "2:12:35",
+            ],
+        )
+
+        cursor.type_cast = True
+        cursor.execute(f"select * from {TABLE_DATA_TYPES_TEST}")
+        row = cursor.fetchone()
+        self.assertEqual(
+            row,
+            [
+                int(120),
+                int(32000),
+                int(2000111222),
+                int(4000111222333),
+                float(5.2),
+                float(555.22),
+                bytes([1, 16]),
+                "Clob",
+                "Varchar(*)",
+                "Char(*)",
+                "String",
+                bytes([1, 16]),
+                "0110110",
+                "0110",
+                True,
+                "2002-12",
+                "2002-12-24",
+                "17:35:10",
+                "2002-12-24 17:35:10.250",
+                "2-06",
+                "2:12:35",
+            ],
+        )
+        cursor.close()
+
+    def prepare_table_all_types(self):
+        cursor = self.client.cursor()
+        cursor.execute(
+            f"""create table {TABLE_DATA_TYPES_TEST}
+           (
+            a TINYINT,
+            b SMALLINT,
+            c INTEGER,
+            d BIGINT,
+            e NUMERIC(5,2),
+            f DECIMAL(5,2),
+            g BLOB,
+            h CLOB,
+            i VARCHAR(*),
+            j CHAR(*) ,
+            k STRING,
+            l BINCHAR (*),
+            m BITS (*),
+            n BITS2 (*),
+            o BOOL,
+            p DATETIME[YY:MO],
+            q DATE,
+            r TIME,
+            s TIMESTAMP,
+            t TIMESPAN[YY:MO],
+            u INTERVAL HOUR TO SECOND
+           );"""
+        )
+
+        cursor.execute(
+            f"""
+        insert into {TABLE_DATA_TYPES_TEST} values (
+          120,
+          32000,
+          2000111222,
+          4000111222333,
+          5.2,
+          555.22,
+          0x0110,
+          'Clob',
+          'Varchar(*)',
+          'Char(*)' ,
+          'String',
+          0x0110,
+          0b0110110,
+          0b0110,
+          TRUE,
+          DATETIME(2002-12),
+          DATE '2002-12-24',
+          TIME '17:35:10',
+          TIMESTAMP '2002-12-24 17:35:10.025',
+          TIMESPAN[YY:MO](2-6),
+          INTERVAL '2:12:35' HOUR TO SECOND
+          );
+        """
+        )
         cursor.close()
 
 
