@@ -132,19 +132,50 @@ tci.TCIFetchW.restype = TCIState
 fetch = tci.TCIFetchW
 
 
-def set_param(resultset, index, value):
-    str_value = ct.c_wchar_p(str(value))
+def get_tci_type_and_c_value(value):
+    if type(value) == int:
+        (c_value, tci_type, by_ref) = (ct.c_long(value), TCI_C_INT8, True)
+    elif type(value) == float:
+        (c_value, tci_type, by_ref) = (ct.c_double(value), TCI_C_DOUBLE, True)
+    elif type(value) == bool:
+        (c_value, tci_type, by_ref) = (ct.c_bool(value), TCI_C_INT1, True)
+    elif type(value) == bytearray or type(value) == bytes:
+        (c_value, tci_type, by_ref) = (
+            ct.create_string_buffer(value),
+            TCI_C_BYTE,
+            False,
+        )
+    elif type(value) == str:
+        (c_value, tci_type, by_ref) = (ct.c_wchar_p(value), TCI_C_WCHAR, False)
+    else:
+        (c_value, tci_type, by_ref) = (ct.c_wchar_p(str(value)), TCI_C_WCHAR, False)
+
     is_null = ct.c_int(-1) if value is None else None
+
+    return (c_value, tci_type, by_ref, is_null)
+
+
+def set_param(resultset, index, value):
+    (c_value, tci_type, by_ref, is_null) = get_tci_type_and_c_value(value)
     return tci.TCISetDataW(
-        resultset, index, str_value, sizeof(str_value), TCI_C_WCHAR, is_null
+        resultset,
+        index,
+        c_value if not by_ref else ct.byref(c_value),
+        sizeof(c_value),
+        tci_type,
+        is_null,
     )
 
 
 def set_param_by_name(resultset, name, value):
-    str_value = ct.c_wchar_p(str(value))
-    is_null = ct.c_int(-1) if value is None else None
+    (c_value, tci_type, by_ref, is_null) = get_tci_type_and_c_value(value)
     return tci.TCISetDataByNameW(
-        resultset, name, str_value, sizeof(str_value), TCI_C_WCHAR, is_null
+        resultset,
+        name,
+        c_value if not by_ref else ct.byref(c_value),
+        sizeof(c_value),
+        tci_type,
+        is_null,
     )
 
 
@@ -221,9 +252,14 @@ TCI_NO_DATA_FOUND = 100
 
 TCI_FETCH_NEXT = 1
 
-TCI_C_CHAR = 0x0100 | 0x1000 | 0x0A
+TCI_TYPE = 0x0100
+TCI_C_CHAR = TCI_TYPE | 0x1000 | 0x0A
 TCI_C_WCHAR = TCI_C_CHAR | (0x2000)
-TCI_C_INT_4 = 0x0100 | 0x03
+TCI_C_INT1 = TCI_TYPE | 0x01
+TCI_C_INT_4 = TCI_TYPE | 0x03
+TCI_C_INT8 = TCI_TYPE | 0x0B
+TCI_C_DOUBLE = TCI_TYPE | 0x06
+TCI_C_BYTE = TCI_TYPE | 0x1000 | 0x0C
 
 TCI_ATTR_COLUMN_COUNT = 7
 TCI_ATTR_COLUMN_NAME = 10

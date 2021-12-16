@@ -1,5 +1,4 @@
 import os
-from build.lib.transbase.transbase import Cursor
 from transbase.error import DatabaseError
 import unittest
 from transbase import transbase
@@ -7,10 +6,10 @@ import uuid
 
 db_url = os.getenv("DB_URL", "//localhost:2024/sample")
 db_user = os.getenv("DB_USER", "tbadmin")
-db_password = os.getenv("DB_PASSWORD", "admin")
+db_password = os.getenv("DB_PASSWORD", "")
 db = (db_url, db_user, db_password)
 
-TABLE = "cashbook_py_" + str(uuid.uuid4())[0 - 7]
+TABLE = "cashbook_py_" + str(uuid.uuid4())[0:7]
 TABLE_DATA_TYPES_TEST = TABLE + "_data_types"
 
 SELECT_ALL = f"select * from {TABLE}"
@@ -274,6 +273,51 @@ class TestTransbase(unittest.TestCase):
                 "2:12:35",
             ],
         )
+        cursor.close()
+
+    def test_parameter_type_cast(self):
+        cursor = self.client.cursor()
+        cursor.execute(
+            f"select * from {TABLE_DATA_TYPES_TEST} where a > ? and f > ? and o = ?",
+            [5, 1.1, True],
+        )
+        self.assertEqual(0, cursor.state())
+        cursor.execute(
+            f"select * from {TABLE_DATA_TYPES_TEST} where a > :a and f > :f and o = :o",
+            {"a": 5, "f": 1.1, "o": True},
+        )
+        self.assertEqual(0, cursor.state())
+        cursor.close()
+
+    def test_insert_type_cast(self):
+        cursor = self.client.cursor()
+        cursor.execute(
+            f"insert into {TABLE_DATA_TYPES_TEST} values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);",
+            [
+                int(42),
+                int(4200),
+                int(2000111242),
+                int(4000111222342),
+                float(42.2),
+                float(555.42),
+                bytes([1, 2, 3]),
+                None,
+                "Varchar(*)",
+                "Char(*)",
+                "String",
+                bytes([1, 2, 3]),
+                None,
+                None,
+                True,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            ],
+        )
+        self.assertEqual(0, cursor.state())
         cursor.close()
 
     def prepare_table_all_types(self):
