@@ -8,11 +8,6 @@
 A python client for [transbase](https://www.transaction.de/loesungen/transbase-ressourcenoptimierte-hochleistungsdatenbank)
 based on tci implementing python database api v2.0 ([PEP-249](https://www.python.org/dev/peps/pep-0249/))
 
-|               |       |
-| ------------- | ----: |
-| **Python**    |   3.9 |
-| **Transbase** | 8.4.1 |
-
 ## Install
 
 Transbase is available in [PyPi](https://test.pypi.org/project/transbase/)
@@ -30,6 +25,10 @@ from transbase import transbase
 client = transbase.connect("//localhost:8024/dbtest", "admin", "admin")
 
 cursor = client.cursor()
+
+# use native python data types in fetch result set (bool, int, float, bytes,...)
+# otherwise all values will be fetched as plain "str"
+cursor.type_cast = True
 
 cursor.execute("select * from systable")
 row = cursor.fetchone()
@@ -52,13 +51,13 @@ Query parameters can be passed as second argument
 # pass parameters as object matching named parameters
 cursor.execute(
     "select * from cashbook where nr >= :nr and comment like :comment",
-    {"nr": "1", "comment": "Lu%"},
+    {"nr": 1, "comment": "Lu%"},
 )
 
 # or as an array for positional parameters
 cursor.execute(
     "select * from cashbook where nr >= ? and comment like ?",
-    ["1", "Lu%"]
+    [1, "Lu%"]
 )
 ```
 
