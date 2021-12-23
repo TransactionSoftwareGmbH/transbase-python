@@ -5,10 +5,8 @@
     <a href="https://github.com/TransactionSoftwareGmbH/transbase-python/actions/workflows/python-verify.yml"><img src="https://github.com/TransactionSoftwareGmbH/transbase-python/actions/workflows/python-verify.yml/badge.svg " alt="test" height="18"></a>
 </p>
 
-Python database driver for [transbase](https://www.transaction.de/produkte/transbase.html)
-
-based on Transbase/TCI /C/C++ call interfaqce
-
+Python database driver for [Transbase](https://www.transaction.de/produkte/transbase.html)  
+based on Transbase/TCI ([Transase C/C++ call interface](https://www.transaction.de/transbase/doku/call-interface-tci.html)  
 implementing Python database api v2.0 ([PEP-249](https://www.python.org/dev/peps/pep-0249/))
 
 |               |       |
@@ -42,7 +40,8 @@ cursor.close()
 connection.close()
 ```
 
-DML statements (insert, update, delete) are executed similar. The number of affected rows can be obtained by `.rowcount`
+DML statements (insert, update, delete) are executed similar.  
+The number of affected rows can be obtained by `.rowcount`
 
 ```python
 cursor.execute("insert into test ( text ) values ( '... kind regards' )");
@@ -69,9 +68,9 @@ cursor.execute(
 
 ### TCI SDK not found
 
-If no prebuild binary wheel could be found on PyPi for your operating system or Python version 
-you can simply download it after installation by
-running the python script (added with installation of this package)
+If no prebuild binary wheel could be found on PyPi for your operating system or Python version  
+you can simply download it after installation by running the python script  
+(added with installation of this package)
 
 ```
 scripts/install_tci.py
