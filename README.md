@@ -6,7 +6,7 @@
 </p>
 
 Python database driver for [Transbase](https://www.transaction.de/produkte/transbase.html)  
-based on Transbase/TCI ([Transase C/C++ call interface](https://www.transaction.de/transbase/doku/call-interface-tci.html)  
+based on Transbase/TCI ([Transase C/C++ call interface](https://www.transaction.de/transbase/doku/call-interface-tci.html) )  
 implementing Python database api v2.0 ([PEP-249](https://www.python.org/dev/peps/pep-0249/))
 
 |               |       |
@@ -73,7 +73,7 @@ you can simply download it after installation by running the python script
 (added with installation of this package)
 
 ```
-scripts/install_tci.py
+install_tci
 ```
 
 ## Contribution
@@ -85,9 +85,9 @@ VS-Code Editor with python extension is recommended.
 - install python 3.9 (TODO: -> 3.11)
 - it is recommended to install and use virtualenv
   `py -m pip install --user virtualenv`
-- Install required dependencies
+- install required dependencies
   `py -m pip install flake8 coverage requests`
-- Download tci lib `py setup.py get_lib`
+- download tci lib `py setup.py get_lib`
 
 ### Test
 
