@@ -37,6 +37,12 @@ class Cursor:
     """
     arraysize = 1
 
+    """
+    By default all column values are fetched as strings. Set type_cast to "True" to cast values
+    to built in python data types where possible
+    """
+    type_cast = False
+
     __statement = tci.TCIEnvironment()
     __resultset = tci.TCIResultSet()
 
@@ -177,14 +183,30 @@ class Cursor:
 
     def __getRow(self):
         row = []
-        for idx, _ in enumerate(self.description, start=1):
-            row.append(tci.get_data_as_string(self.__resultset, idx))
+        for idx, info in enumerate(self.description, start=1):
+            str_value = tci.get_data_as_string(self.__resultset, idx)
+            row.append(self.__cast(info, str_value) if self.type_cast else str_value)
         return row
 
     def __call(self, state):
         self.__state = state
         if self.__state != tci.TCI_SUCCESS:
             tci.handle_error(self.__error)
+
+    def __cast(self, info, value):
+        sql_type = sql_type_code_to_name(info[1])
+        if sql_type == "BOOL":
+            return bool(value)
+        elif sql_type in ["TINYINT", "SMALLINT", "INTEGER", "BIGINT"]:
+            return int(value)
+        elif sql_type in ["NUMERIC", "FLOAT", "DOUBLE"]:
+            return float(value)
+        # TODO fetch buffered and use
+        # https://docs.python.org/3/c-api/buffer.html#bufferobjects
+        elif sql_type in ["BLOB", "BINARY"]:
+            return bytes.fromhex(value)
+        else:
+            return value
 
     # def callproc( procname [, parameters ] )
 
@@ -245,3 +267,12 @@ class Connection:
 # Constructor for creating a connection to the database
 def connect(url: str, user: str, password: str) -> Connection:
     return Connection(url, user, password)
+
+
+# get the sql type name for the given tci sql type code
+def sql_type_code_to_name(code: int) -> str:
+    return tci.TCI_SQL_TYPES_INVERTED.get(code)
+
+
+def sql_type_name_to_code(name: str) -> int:
+    return tci.TCI_SQL_TYPES.get(name)

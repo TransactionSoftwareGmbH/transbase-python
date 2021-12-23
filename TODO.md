@@ -15,3 +15,4 @@
 - [x] basic error handling
 - [x] setup test workflow
 - [x] setup publish workflow
+- [x] type casts

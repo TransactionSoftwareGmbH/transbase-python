@@ -33,6 +33,10 @@ connection = transbase.connect("//develop.transaction.de:8324/test", "test", "te
 cursor = connection.cursor()
 
 cursor.execute("select no, text, date from test")
+# use native python data types in fetch result set (bool, int, float, bytes,...)
+# otherwise all values will be fetched as plain "str"
+cursor.type_cast = True
+
 row = cursor.fetchone()
 print(row)
 
