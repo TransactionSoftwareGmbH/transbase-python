@@ -4,9 +4,9 @@ import unittest
 from transbase import transbase
 import uuid
 
-db_url = os.getenv("DB_URL", "//localhost:2024/sample")
-db_user = os.getenv("DB_USER", "tbadmin")
-db_password = os.getenv("DB_PASSWORD", "")
+db_url = os.getenv("DB_URL", "//develop.transaction.de:8324/test")
+db_user = os.getenv("DB_USER", "test")
+db_password = os.getenv("DB_PASSWORD", "test")
 db = (db_url, db_user, db_password)
 
 TABLE = "cashbook_py_" + str(uuid.uuid4())[0 - 7]

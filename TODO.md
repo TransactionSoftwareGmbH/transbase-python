@@ -14,4 +14,4 @@
 - [x] parametrized queries
 - [x] basic error handling
 - [x] setup test workflow
-- [x] setup publish worklfow
+- [x] setup publish workflow

@@ -5,13 +5,16 @@
     <a href="https://github.com/TransactionSoftwareGmbH/transbase-python/actions/workflows/python-verify.yml"><img src="https://github.com/TransactionSoftwareGmbH/transbase-python/actions/workflows/python-verify.yml/badge.svg " alt="test" height="18"></a>
 </p>
 
-A python client for [transbase](https://www.transaction.de/loesungen/transbase-ressourcenoptimierte-hochleistungsdatenbank)
-based on tci implementing python database api v2.0 ([PEP-249](https://www.python.org/dev/peps/pep-0249/))
+Python database driver for [transbase](https://www.transaction.de/produkte/transbase.html)
+
+based on Transbase/TCI /C/C++ call interfaqce
+
+implementing Python database api v2.0 ([PEP-249](https://www.python.org/dev/peps/pep-0249/))
 
 |               |       |
 | ------------- | ----: |
 | **Python**    |   3.9 |
-| **Transbase** | 8.4.1 |
+| **Transbase** |   8.x |
 
 ## Install
 
@@ -26,23 +29,23 @@ pip install transbase
 ```python
 from transbase import transbase
 
-# change to your transbase connection
-client = transbase.connect("//localhost:8024/dbtest", "admin", "admin")
+# connect to transbase database
+connection = transbase.connect("//develop.transaction.de:8324/test", "test", "test")
 
-cursor = client.cursor()
+cursor = connection.cursor()
 
-cursor.execute("select * from systable")
+cursor.execute("select no, text, date from test")
 row = cursor.fetchone()
 print(row)
 
 cursor.close()
-client.close()
+connection.close()
 ```
 
-DML statements (insert, update and delete) are executed similar. The number of affected rows can be obtained by `.rowcount`
+DML statements (insert, update, delete) are executed similar. The number of affected rows can be obtained by `.rowcount`
 
 ```python
-cursor.execute("insert into cashbook values (42, default, 100, 'INSERT');");
+cursor.execute("insert into test ( text ) values ( '... kind regards' )");
 print(cursor.rowcount) # -> 1
 ```
 
@@ -51,14 +54,14 @@ Query parameters can be passed as second argument
 ```python
 # pass parameters as object matching named parameters
 cursor.execute(
-    "select * from cashbook where nr >= :nr and comment like :comment",
-    {"nr": "1", "comment": "Lu%"},
+    "select no, text, date from test where no >= :no and text like :text",
+    { "no": 1, "text": "Hello%" }
 )
 
 # or as an array for positional parameters
 cursor.execute(
-    "select * from cashbook where nr >= ? and comment like ?",
-    ["1", "Lu%"]
+    "select no, text, date from test where no >= ? and text like insensitive ?",
+    [ 2, "%kind%" ]
 )
 ```
 
@@ -66,11 +69,12 @@ cursor.execute(
 
 ### TCI SDK not found
 
-If no prebuild binary wheel could be found on PyPi for your os or python version you can simply download it after installation by
+If no prebuild binary wheel could be found on PyPi for your operating system or Python version 
+you can simply download it after installation by
 running the python script (added with installation of this package)
 
 ```
-install_tci
+scripts/install_tci.py
 ```
 
 ## Contribution
@@ -94,7 +98,7 @@ VS-Code Editor with python extension is recommended.
 
 Source distribution and wheel including tci sdk
 
-- `py setup.py sdist bdist_wheel`
+- `py setup.py sdist [bdist_wheel]`
 
 #### Manual Release
 
