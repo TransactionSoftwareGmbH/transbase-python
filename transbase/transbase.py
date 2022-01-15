@@ -52,7 +52,10 @@ class Cursor:
         self.__call(tci.allocateResultSet(self.__statement, error, self.__resultset))
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def execute(self, operation: str, params=None):
         """
@@ -224,7 +227,10 @@ class Connection:
         self.__call(tci.login(self.__con, user, password))
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def close(self):
         """
