@@ -7,6 +7,8 @@ apilevel = "2.0"
 threadsafety = 0
 paramstyle = "qmark,named"
 
+State = tci.ResultState
+
 
 class Cursor:
     """
@@ -94,10 +96,10 @@ class Cursor:
         """
         Fetch the next row of a query result set, returning a single sequence, or None when no more data is available.
         """
-        self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
-        if self.__state == tci.TCI_SUCCESS:
+        self.__state = State(tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0))
+        if self.__state == State.SUCCESS:
             return self.__getRow()
-        elif self.__state != tci.TCI_NO_DATA_FOUND:
+        elif self.__state != State.NO_DATA_FOUND:
             return self.__call(self.__state)
         else:
             return None
@@ -114,10 +116,10 @@ class Cursor:
         while count < 0 or i < count:
             i += 1
             # can be optimized later with tci fetch many...
-            self.__state = tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0)
-            if self.__state == tci.TCI_SUCCESS:
+            self.__state = State(tci.fetch(self.__resultset, 1, tci.TCI_FETCH_NEXT, 0))
+            if self.__state == State.SUCCESS:
                 result.append(self.__getRow())
-            elif self.__state != tci.TCI_NO_DATA_FOUND:
+            elif self.__state != State.NO_DATA_FOUND:
                 self.__call(self.__state)
             else:
                 break
@@ -186,14 +188,16 @@ class Cursor:
 
     def __getRow(self):
         row = []
+        if self.description is None:
+            return row
         for idx, info in enumerate(self.description, start=1):
             str_value = tci.get_data_as_string(self.__resultset, idx)
             row.append(self.__cast(info, str_value) if self.type_cast else str_value)
         return row
 
-    def __call(self, state):
-        self.__state = state
-        if self.__state != tci.TCI_SUCCESS:
+    def __call(self, tci_state):
+        self.__state = State(tci_state)
+        if self.__state != State.SUCCESS:
             tci.handle_error(self.__error)
 
     def __cast(self, info, value):
@@ -220,13 +224,30 @@ class Connection:
     __env = tci.TCIEnvironment()
     __con = tci.TCIConnection()
     __error = tci.TCIError()
+    __tx = tci.TCITransaction()
 
-    def __init__(self, url, user, password):
+    """'
+    Attribute to query and set the autocommit mode of the connection.
+    Return True if the connection is operating in autocommit (non- transactional) mode. 
+    Return False if the connection is operating in manual commit (transactional) mode.
+    """
+    autocommit = True
+
+    def setautocommit(self, value: bool):
+        if self.autocommit and not value:
+            self.__begin()
+        self.autocommit = value
+
+    def __init__(self, url, user, password, autocommit=True):
+        self.autocommit = autocommit
         tci.allocateEnvironment(self.__env)
         tci.allocateError(self.__env, self.__error)
-        tci.allocateConnection(self.__env, self.__error, self.__con)
+        self.__call(tci.allocateConnection(self.__env, self.__error, self.__con))
+        self.__call(tci.allocateTransaction(self.__env, self.__error, self.__tx))
         self.__call(tci.connect(self.__con, url))
         self.__call(tci.login(self.__con, user, password))
+        if not self.autocommit:
+            self.__begin()
 
     def __del__(self):
         try:
@@ -238,6 +259,9 @@ class Connection:
         """
         Close the connection now (rather than whenever .__del__() is called).
         """
+        if self.__tx:
+            tci.freeTransaction(self.__tx)
+            self.__tx = None
         if self.__con:
             tci.freeConnection(self.__con)
             self.__con = None
@@ -251,24 +275,29 @@ class Connection:
 
     def commit(self):
         """Commit any pending transaction to the database."""
-        # TODO (optional api)
-        pass
+        if self.__tx:
+            self.__call(tci.commit(self.__tx))
 
     def rollback(self):
         """This method is optional since not all databases provide transaction support"""
-        # TODO (optional api)
-        pass
+        if self.__tx:
+            self.__call(tci.rollback(self.__tx))
 
     def cursor(self) -> Cursor:
         """Return a new Cursor Object using the connection."""
         return Cursor(self.__con, self.__error)
 
-    def state(self) -> bool:
+    def state(self):
         return self.__state
 
-    def __call(self, state):
-        self.__state = state
-        if self.__state != tci.TCI_SUCCESS:
+    def __begin(self):
+        """start a new transaction"""
+        if self.__tx:
+            self.__call(tci.beginTransaction(self.__tx, self.__con))
+
+    def __call(self, tci_state):
+        self.__state = State(tci_state)
+        if self.__state != State.SUCCESS:
             tci.handle_error(self.__error)
 
 
@@ -279,8 +308,8 @@ def connect(url: str, user: str, password: str) -> Connection:
 
 # get the sql type name for the given tci sql type code
 def sql_type_code_to_name(code: int) -> str:
-    return tci.TCI_SQL_TYPES_INVERTED.get(code)
+    return tci.TCI_SQL_TYPES_INVERTED.get(code) or "UNKNOWN"
 
 
 def sql_type_name_to_code(name: str) -> int:
-    return tci.TCI_SQL_TYPES.get(name)
+    return tci.TCI_SQL_TYPES.get(name) or 0

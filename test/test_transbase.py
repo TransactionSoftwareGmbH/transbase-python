@@ -59,6 +59,7 @@ class TestTransbase(unittest.TestCase):
 
     def setUp(self):
         self.client = transbase.connect(*db)
+        self.client.setautocommit(True)
 
     def tearDown(self):
         if self.client:
@@ -74,7 +75,7 @@ class TestTransbase(unittest.TestCase):
         client = transbase.connect(*db)
         self.assertIsNotNone(client)
         self.assertIsInstance(client, transbase.Connection)
-        self.assertEqual(client.state(), 0)
+        self.assertEqual(client.state(), transbase.State.SUCCESS)
 
     def test_close_connection(self):
         client = transbase.connect(*db)
@@ -102,7 +103,7 @@ class TestTransbase(unittest.TestCase):
         self.assertIsNotNone(cursor)
         cursor.execute(SELECT_ALL)
         row = cursor.fetchone()
-        self.assertEqual(cursor.state(), 0)
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
         self.assertIsNotNone(row)
         cursor.close()
 
@@ -282,12 +283,12 @@ class TestTransbase(unittest.TestCase):
             f"select * from {TABLE_DATA_TYPES_TEST} where a > ? and f > ? and o = ?",
             [5, 1.1, True],
         )
-        self.assertEqual(0, cursor.state())
+        self.assertEqual(transbase.State.SUCCESS, cursor.state())
         cursor.execute(
             f"select * from {TABLE_DATA_TYPES_TEST} where a > :a and f > :f and o = :o",
             {"a": 5, "f": 1.1, "o": True},
         )
-        self.assertEqual(0, cursor.state())
+        self.assertEqual(transbase.State.SUCCESS, cursor.state())
         cursor.close()
 
     def test_insert_type_cast(self):
@@ -318,7 +319,7 @@ class TestTransbase(unittest.TestCase):
                 None,
             ],
         )
-        self.assertEqual(0, cursor.state())
+        self.assertEqual(transbase.State.SUCCESS, cursor.state())
         cursor.close()
 
     # https://github.com/TransactionSoftwareGmbH/transbase-python/issues/3
@@ -388,6 +389,28 @@ class TestTransbase(unittest.TestCase):
             row,
         )
         cursor.execute(f"drop table {table};")
+        cursor.close()
+
+    def test_commit(self):
+        self.client.setautocommit(False)
+        cursor = self.client.cursor()
+        cursor.type_cast = True
+        cursor.execute(f"update {TABLE} set amount = 42 where nr = 4;")
+        self.client.commit()
+        cursor.execute(f"select amount from {TABLE} where nr = 4")
+        row = cursor.fetchone()
+        self.assertEqual(42, row[0])
+        cursor.close()
+
+    def test_rollback(self):
+        self.client.setautocommit(False)
+        cursor = self.client.cursor()
+        cursor.type_cast = True
+        cursor.execute(f"update {TABLE} set amount = 99 where nr = 4;")
+        self.client.rollback()
+        cursor.execute(f"select amount from {TABLE} where nr = 4")
+        row = cursor.fetchone()
+        self.assertNotEqual(99, row[0])
         cursor.close()
 
     def prepare_table_all_types(self):

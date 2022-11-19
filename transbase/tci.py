@@ -1,4 +1,5 @@
 import ctypes as ct
+from enum import Enum
 import sys
 from transbase.error import DatabaseError, Error
 import os.path
@@ -39,6 +40,8 @@ def find_tci_lib():
 # load tci dll
 if __name__ == "transbase.tci":
     tci = ct.CDLL(find_tci_lib())
+else:
+    raise Error("Exit")
 
 sizeof = ct.sizeof
 
@@ -47,6 +50,7 @@ TCIError = ct.POINTER(ct.c_void_p)
 TCIConnection = ct.POINTER(ct.c_void_p)
 TCIStatement = ct.POINTER(ct.c_void_p)
 TCIResultSet = ct.POINTER(ct.c_void_p)
+TCITransaction = ct.POINTER(ct.c_void_p)
 TCIState = ct.c_int
 TCIErrorCode = ct.c_int
 attribute = ct.c_int
@@ -73,6 +77,14 @@ allocateStatement = tci.TCIAllocStatementW
 tci.TCIAllocResultSetW.argtypes = [TCIStatement, TCIError, ct.POINTER(TCIResultSet)]
 tci.TCIAllocResultSetW.restype = TCIState
 allocateResultSet = tci.TCIAllocResultSetW
+
+tci.TCIAllocTransactionW.argtypes = [
+    TCIEnvironment,
+    TCIError,
+    ct.POINTER(TCITransaction),
+]
+tci.TCIAllocTransactionW.restype = TCIState
+allocateTransaction = tci.TCIAllocTransactionW
 
 """
 FUNCTIONS
@@ -130,6 +142,18 @@ prepare = tci.TCIPrepareW
 tci.TCIFetchW.argtypes = [TCIResultSet, ct.c_int, ct.c_int, ct.c_int]
 tci.TCIFetchW.restype = TCIState
 fetch = tci.TCIFetchW
+
+tci.TCIBeginTransactionW.argtypes = [TCITransaction, TCIConnection]
+tci.TCIBeginTransactionW.restype = TCIState
+beginTransaction = tci.TCIBeginTransactionW
+
+tci.TCICommitTransactionW.argtypes = [TCITransaction]
+tci.TCICommitTransactionW.restype = TCIState
+commit = tci.TCICommitTransactionW
+
+tci.TCIRollbackTransactionW.argtypes = [TCITransaction]
+tci.TCIRollbackTransactionW.restype = TCIState
+rollback = tci.TCIRollbackTransactionW
 
 
 def get_tci_type_and_c_value(value):
@@ -244,11 +268,23 @@ tci.TCIFreeEnvironmentW.argtypes = [TCIEnvironment]
 tci.TCIFreeEnvironmentW.restype = TCIState
 freeEnvironment = tci.TCIFreeEnvironmentW
 
+tci.TCIFreeTransactionW.argtypes = [TCITransaction]
+tci.TCIFreeTransactionW.restype = TCIState
+freeTransaction = tci.TCIFreeTransactionW
+
 """
 CONSTANTS
 """
-TCI_SUCCESS = 0
-TCI_NO_DATA_FOUND = 100
+
+
+class ResultState(Enum):
+    SUCCESS = 0
+    ERROR = -1
+    NO_DATA_FOUND = 100
+    INVALID_HANDLE = 17001
+    TRANSACTIONS_ROLLEDBACK = 17027
+    DATA_TRUNCATION = 17031
+
 
 TCI_FETCH_NEXT = 1
 
