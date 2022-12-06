@@ -4,12 +4,13 @@ import unittest
 from transbase import transbase
 import uuid
 
-db_url = os.getenv("DB_URL", "//develop.transaction.de:8324/test")
-db_user = os.getenv("DB_USER", "test")
-db_password = os.getenv("DB_PASSWORD", "test")
+db_url = os.getenv("DB_URL", "//localhost:2024/sample")
+db_user = os.getenv("DB_USER", "tbadmin")
+db_password = os.getenv("DB_PASSWORD", "")
 db = (db_url, db_user, db_password)
 
-TABLE = "cashbook_py_" + str(uuid.uuid4())[0:7]
+UID = str(uuid.uuid4())[0:7]
+TABLE = "cashbook_py_" + UID
 TABLE_DATA_TYPES_TEST = TABLE + "_data_types"
 
 SELECT_ALL = f"select * from {TABLE}"
@@ -320,6 +321,75 @@ class TestTransbase(unittest.TestCase):
         self.assertEqual(0, cursor.state())
         cursor.close()
 
+    # https://github.com/TransactionSoftwareGmbH/transbase-python/issues/3
+    def test_boolean(self):
+        cursor = self.client.cursor()
+        table = "t_py_bool" + UID
+        try:
+            cursor.execute(f"create table {table} (a integer, b bool);")
+            cursor.execute(f"insert into {table} values (1, true);")
+            cursor.execute(f"insert into {table} values (2, false);")
+            cursor.execute(f"insert into {table} values (3, TRUE);")
+            cursor.execute(f"insert into {table} values (4, FALSE);")
+            cursor.execute(f"insert into {table} values (5, ?);", [True])
+            cursor.execute(f"insert into {table} values (6, ?);", [False])
+            cursor.execute(f"insert into {table} values (7, null);")
+        except Exception as e:
+            print(e)
+
+        cursor.execute(f"select a,b from {table};")
+        row = cursor.fetchall()
+        self.assertEqual(
+            row,
+            [
+                ["1", "true"],
+                ["2", "false"],
+                ["3", "true"],
+                ["4", "false"],
+                ["5", "true"],
+                ["6", "false"],
+                ["7", None],
+            ],
+        )
+        cursor.type_cast = True
+        cursor.execute(f"select a,b from {table};")
+        row = cursor.fetchall()
+        self.assertEqual(
+            row,
+            [
+                [1, True],
+                [2, False],
+                [3, True],
+                [4, False],
+                [5, True],
+                [6, False],
+                [7, None],
+            ],
+        )
+        cursor.execute(f"drop table {table};")
+        cursor.close()
+
+    # https://github.com/TransactionSoftwareGmbH/transbase-python/issues/4
+    def test_execute_with_param_bytes(self):
+        table = "t_py_bytes" + UID
+        cursor = self.client.cursor()
+        cursor.type_cast = True
+        try:
+            cursor.execute(f"create table {table} (a integer, b BINCHAR(1))")
+            cursor.execute(f"insert into {table} values (1,0x01);")
+        except Exception as e:
+            print(e)
+        id = bytes.fromhex("01")
+        cursor.execute(f"select a,b from {table} where b=?", (id,))
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(
+            [1, id],
+            row,
+        )
+        cursor.execute(f"drop table {table};")
+        cursor.close()
+
     def prepare_table_all_types(self):
         cursor = self.client.cursor()
         cursor.execute(
@@ -370,7 +440,7 @@ class TestTransbase(unittest.TestCase):
           DATETIME(2002-12),
           DATE '2002-12-24',
           TIME '17:35:10',
-          TIMESTAMP '2002-12-24 17:35:10.025',
+          TIMESTAMP '2002-12-24 17:35:10.250',
           TIMESPAN[YY:MO](2-6),
           INTERVAL '2:12:35' HOUR TO SECOND
           );

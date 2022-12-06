@@ -141,7 +141,7 @@ def get_tci_type_and_c_value(value):
         (c_value, tci_type, by_ref) = (ct.c_bool(value), TCI_C_INT1, True)
     elif type(value) == bytearray or type(value) == bytes:
         (c_value, tci_type, by_ref) = (
-            ct.create_string_buffer(value),
+            ct.create_string_buffer(value, len(value)),
             TCI_C_BYTE,
             False,
         )

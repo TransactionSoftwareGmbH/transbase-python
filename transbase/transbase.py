@@ -198,8 +198,10 @@ class Cursor:
 
     def __cast(self, info, value):
         sql_type = sql_type_code_to_name(info[1])
-        if sql_type == "BOOL":
-            return bool(value)
+        if value is None:
+            return None
+        elif sql_type == "BOOL":
+            return True if value.lower() == "true" else False
         elif sql_type in ["TINYINT", "SMALLINT", "INTEGER", "BIGINT"]:
             return int(value)
         elif sql_type in ["NUMERIC", "FLOAT", "DOUBLE"]:
