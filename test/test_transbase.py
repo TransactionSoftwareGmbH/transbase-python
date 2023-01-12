@@ -12,6 +12,7 @@ db = (db_url, db_user, db_password)
 UID = str(uuid.uuid4())[0:7]
 TABLE = "cashbook_py_" + UID
 TABLE_DATA_TYPES_TEST = TABLE + "_data_types"
+TABLE_BLOB = TABLE + "_blob"
 
 SELECT_ALL = f"select * from {TABLE}"
 
@@ -412,6 +413,24 @@ class TestTransbase(unittest.TestCase):
         row = cursor.fetchone()
         self.assertNotEqual(99, row[0])
         cursor.close()
+
+    def test_blob(self):
+        cursor = self.client.cursor()
+        cursor.type_cast = True
+        cursor.execute(
+            f"""create table {TABLE_BLOB} (nr integer primary key auto_increment, data BLOB );"""
+        )
+        with open("README.md", "rb") as file:
+            data = file.read()
+            cursor.execute(f"""insert into {TABLE_BLOB} values (?, ?)""", [1, data])
+        cursor.execute(f"select * from {TABLE_BLOB}")
+        row = cursor.fetchone()
+        self.assertIsNotNone(row[1])
+        with open("build/blobFromDB", "wb") as out:
+            out.write(row[1])
+        with open("build/blobFromDB", "rb") as result:
+            line = result.readline()
+            self.assertTrue(line.startswith(b"# transbase-python"))
 
     def prepare_table_all_types(self):
         cursor = self.client.cursor()

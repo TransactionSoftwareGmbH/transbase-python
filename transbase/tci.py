@@ -226,6 +226,24 @@ def get_data_as_string(resultset, colNo=1):
     return None if isNull else buffer.value
 
 
+def get_data_as_buffer(resultset, colNo=1, bufferSize=1024 * 1024):
+    col = ct.c_int(colNo)
+    buffer_size = ct.c_int(bufferSize)
+    byteSize = attribute(0)
+    isNull = ct.c_bool()
+    buffer = ct.create_unicode_buffer(bufferSize)
+    getData(
+        resultset,
+        col,
+        ct.byref(buffer),
+        buffer_size,
+        ct.byref(byteSize),
+        TCI_C_WCHAR,
+        ct.byref(isNull),
+    )
+    return None if isNull else buffer.value
+
+
 getResultSetAttribute = tci.TCIGetResultSetAttributeW
 
 
