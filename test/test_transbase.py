@@ -2,6 +2,7 @@ import os
 from transbase.error import DatabaseError
 import unittest
 from transbase import transbase
+import hashlib
 import uuid
 
 db_url = os.getenv("DB_URL", "//localhost:2024/sample")
@@ -19,6 +20,7 @@ SELECT_ALL = f"select * from {TABLE}"
 class TestTransbase(unittest.TestCase):
 
     client = None
+    TABLE_DATA_TYPES_TEST_CREATED = False
 
     @classmethod
     def setUpClass(cls):
@@ -413,63 +415,83 @@ class TestTransbase(unittest.TestCase):
         self.assertNotEqual(99, row[0])
         cursor.close()
 
-    def prepare_table_all_types(self):
+    def test_hash_record(self):
+        self.prepare_table_all_types()
         cursor = self.client.cursor()
-        cursor.execute(
-            f"""create table {TABLE_DATA_TYPES_TEST}
-           (
-            a TINYINT,
-            b SMALLINT,
-            c INTEGER,
-            d BIGINT,
-            e NUMERIC(5,2),
-            f DECIMAL(5,2),
-            g BLOB,
-            h CLOB,
-            i VARCHAR(*),
-            j CHAR(*) ,
-            k STRING,
-            l BINCHAR (*),
-            m BITS (*),
-            n BITS2 (*),
-            o BOOL,
-            p DATETIME[YY:MO],
-            q DATE,
-            r TIME,
-            s TIMESTAMP,
-            t TIMESPAN[YY:MO],
-            u INTERVAL HOUR TO SECOND
-           );"""
+        cursor.type_cast = False
+        cursor.execute(f"select * from {TABLE_DATA_TYPES_TEST}")
+        row = cursor.fetchall()
+
+        hash = hashlib.sha256()
+        [hash.update(record.encode("utf-8")) for record in row[0]]
+
+        self.assertEqual(
+            "e84b812c3d611dad03dbcf6d6954a2d618b1f11b748690fcf27b40d869acf68f",
+            hash.hexdigest(),
         )
 
-        cursor.execute(
-            f"""
-        insert into {TABLE_DATA_TYPES_TEST} values (
-          120,
-          32000,
-          2000111222,
-          4000111222333,
-          5.2,
-          555.22,
-          0x0110,
-          'Clob',
-          'Varchar(*)',
-          'Char(*)' ,
-          'String',
-          0x0110,
-          0b0110110,
-          0b0110,
-          TRUE,
-          DATETIME(2002-12),
-          DATE '2002-12-24',
-          TIME '17:35:10',
-          TIMESTAMP '2002-12-24 17:35:10.250',
-          TIMESPAN[YY:MO](2-6),
-          INTERVAL '2:12:35' HOUR TO SECOND
-          );
-        """
-        )
-        cursor.close()
+    def prepare_table_all_types(self):
+        try:
+            if self.TABLE_DATA_TYPES_TEST_CREATED:
+                return
+            cursor = self.client.cursor()
+            cursor.execute(
+                f"""create table {TABLE_DATA_TYPES_TEST}
+            (
+                a TINYINT,
+                b SMALLINT,
+                c INTEGER,
+                d BIGINT,
+                e NUMERIC(5,2),
+                f DECIMAL(5,2),
+                g BLOB,
+                h CLOB,
+                i VARCHAR(*),
+                j CHAR(*) ,
+                k STRING,
+                l BINCHAR (*),
+                m BITS (*),
+                n BITS2 (*),
+                o BOOL,
+                p DATETIME[YY:MO],
+                q DATE,
+                r TIME,
+                s TIMESTAMP,
+                t TIMESPAN[YY:MO],
+                u INTERVAL HOUR TO SECOND
+            );"""
+            )
+
+            cursor.execute(
+                f"""insert into {TABLE_DATA_TYPES_TEST} values (
+            120,
+            32000,
+            2000111222,
+            4000111222333,
+            5.2,
+            555.22,
+            0x0110,
+            'Clob',
+            'Varchar(*)',
+            'Char(*)' ,
+            'String',
+            0x0110,
+            0b0110110,
+            0b0110,
+            TRUE,
+            DATETIME(2002-12),
+            DATE '2002-12-24',
+            TIME '17:35:10',
+            TIMESTAMP '2002-12-24 17:35:10.250',
+            TIMESPAN[YY:MO](2-6),
+            INTERVAL '2:12:35' HOUR TO SECOND
+            );"""
+            )
+            self.TABLE_DATA_TYPES_TEST_CREATED = True
+        except:
+            return
+        finally:
+            cursor.close()
 
 
 if __name__ == "__main__":
