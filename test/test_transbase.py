@@ -430,6 +430,27 @@ class TestTransbase(unittest.TestCase):
             hash.hexdigest(),
         )
 
+    def test_create_and_call_psm(self):
+        cursor = self.client.cursor()
+        try:
+            cursor.execute(f"drop function hello")
+        except:
+            pass
+        cursor.execute(
+            f"""
+        create function hello() returns string as
+        begin
+        return select tname from systable first(1);
+        end;
+        """
+        )
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
+        cursor.execute(f"select hello();")
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
+        result = cursor.fetchone()
+        self.assertEqual(1, len(result))
+        cursor.close()
+
     def prepare_table_all_types(self):
         try:
             if self.TABLE_DATA_TYPES_TEST_CREATED:
