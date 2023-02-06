@@ -3,6 +3,8 @@ from transbase.install import download_tci
 from pathlib import Path
 import sys
 
+TRANSBASE_VERSION = "8.4"
+
 
 def get_lib_name():
     if sys.platform.startswith("win"):
@@ -28,7 +30,7 @@ class DownloadSdkCommand(Command):
         pass
 
     def run(self):
-        download_tci(".")
+        download_tci(".", TRANSBASE_VERSION)
 
 
 setup(
