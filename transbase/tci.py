@@ -272,6 +272,17 @@ tci.TCIFreeTransactionW.argtypes = [TCITransaction]
 tci.TCIFreeTransactionW.restype = TCIState
 freeTransaction = tci.TCIFreeTransactionW
 
+tci.TCICloseW.argtypes = [TCIResultSet]
+tci.TCICloseW.restype = TCIState
+close = tci.TCICloseW
+
+tci.TCILogoutW.argtypes = [TCIConnection]
+tci.TCILogoutW.restype = TCIState
+logout = tci.TCILogoutW
+
+tci.TCIDisconnectW.argtypes = [TCIConnection]
+tci.TCIDisconnectW.restype = TCIState
+disconnect = tci.TCIDisconnectW
 """
 CONSTANTS
 """

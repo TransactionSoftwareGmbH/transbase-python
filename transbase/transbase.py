@@ -153,6 +153,7 @@ class Cursor:
         Close the cursor now (rather than whenever __del__ is called)
         """
         if self.__resultset:
+            tci.close(self.__resultset)
             tci.freeResultSet(self.__resultset)
             self.__resultset = None
         if self.__statement:
@@ -263,6 +264,8 @@ class Connection:
             tci.freeTransaction(self.__tx)
             self.__tx = None
         if self.__con:
+            tci.logout(self.__con)
+            tci.disconnect(self.__con)
             tci.freeConnection(self.__con)
             self.__con = None
         if self.__error:
