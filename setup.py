@@ -41,7 +41,7 @@ setup(
     package_data={
         "transbase": [f"../lib/{get_lib_name()}"],
     },
-    version="0.0.5",
+    version="0.0.6",
     description="Python Transbase Client",
     long_description=(Path(__file__).parent / "README.md").read_text(),
     long_description_content_type="text/markdown",
