@@ -227,9 +227,9 @@ class Connection:
     __error = tci.TCIError()
     __tx = tci.TCITransaction()
 
-    """'
+    """
     Attribute to query and set the autocommit mode of the connection.
-    Return True if the connection is operating in autocommit (non- transactional) mode. 
+    Return True if the connection is operating in autocommit (non- transactional) mode.
     Return False if the connection is operating in manual commit (transactional) mode.
     """
     autocommit = True

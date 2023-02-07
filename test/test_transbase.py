@@ -451,11 +451,11 @@ class TestTransbase(unittest.TestCase):
     def test_create_and_call_psm(self):
         cursor = self.client.cursor()
         try:
-            cursor.execute(f"drop function hello")
-        except:
+            cursor.execute("drop function hello")
+        except Exception:
             pass
         cursor.execute(
-            f"""
+            """
         create function hello() returns string as
         begin
         return select tname from systable first(1);
@@ -463,7 +463,7 @@ class TestTransbase(unittest.TestCase):
         """
         )
         self.assertEqual(cursor.state(), transbase.State.SUCCESS)
-        cursor.execute(f"select hello();")
+        cursor.execute("select hello();")
         self.assertEqual(cursor.state(), transbase.State.SUCCESS)
         result = cursor.fetchone()
         self.assertEqual(1, len(result))
@@ -527,7 +527,7 @@ class TestTransbase(unittest.TestCase):
             );"""
             )
             self.TABLE_DATA_TYPES_TEST_CREATED = True
-        except:
+        except Exception:
             return
         finally:
             cursor.close()
