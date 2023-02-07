@@ -256,6 +256,16 @@ class Connection:
         except Exception:
             pass
 
+    def client_version(self):
+        (state, version) = tci.client_version(self.__env)
+        self.__call(state)
+        return version
+
+    def server_version(self):
+        (state, version) = tci.server_version(self.__con)
+        self.__call(state)
+        return version
+
     def close(self):
         """
         Close the connection now (rather than whenever .__del__() is called).

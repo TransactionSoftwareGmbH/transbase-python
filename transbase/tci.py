@@ -55,6 +55,7 @@ TCIState = ct.c_int
 TCIErrorCode = ct.c_int
 attribute = ct.c_int
 
+
 """
 ALLOCATIONS
 """
@@ -245,6 +246,35 @@ def resultset_string_attribute(resultset, attributekey, col=1):
     return attr.value
 
 
+class TCIVersion(ct.Structure):
+    _fields_ = [
+        ("major_version", ct.c_int),
+        ("minor_version", ct.c_int),
+        ("release", ct.c_int),
+        ("patch", ct.c_int),
+        ("build", ct.c_int),
+    ]
+
+    def __str__(self):
+        return f"{self.major_version}.{self.minor_version}.{self.release}.{self.patch}.{self.build}"
+
+
+def client_version(environment):
+    version = TCIVersion()
+    state = tci.TCIGetEnvironmentAttributeW(
+        environment, TCI_ATTR_VERSION, 1, ct.byref(version), sizeof(version), None
+    )
+    return (state, version)
+
+
+def server_version(connection):
+    version = TCIVersion()
+    state = tci.TCIGetConnectionAttributeW(
+        connection, TCI_ATTR_VERSION, 1, ct.byref(version), sizeof(version), None
+    )
+    return (state, version)
+
+
 """
 CLEANUP
 """
@@ -313,6 +343,7 @@ TCI_ATTR_COLUMN_NAME = 10
 TCI_ATTR_COLUMN_TYPE = 14
 TCI_ATTR_ROWCOUNT = 40
 TCI_ATTR_RECORDS_TOUCHED = 55
+TCI_ATTR_VERSION = 68
 
 TCI_SQL_TYPES = {
     "BOOL": 16641,

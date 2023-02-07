@@ -99,6 +99,24 @@ class TestTransbase(unittest.TestCase):
         cursor.close()
         client.close()
 
+    def test_client_version(self):
+        client = transbase.connect(*db)
+        version = client.client_version()
+        print("client version:", version)
+        self.assertEqual(8, version.major_version)
+        self.assertIsNotNone(version.minor_version)
+        self.assertTrue(version.__str__().startswith("8."))
+        client.close()
+
+    def test_server_version(self):
+        client = transbase.connect(*db)
+        version = client.server_version()
+        print("server version:", version)
+        self.assertEqual(8, version.major_version)
+        self.assertIsNotNone(version.minor_version)
+        self.assertTrue(version.__str__().startswith("8."))
+        client.close()
+
     def test_execute_query(self):
         cursor = self.client.cursor()
         self.assertIsInstance(cursor, transbase.Cursor)
