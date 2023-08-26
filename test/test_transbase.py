@@ -233,8 +233,9 @@ class TestTransbase(unittest.TestCase):
         self.assertIsNotNone(row)
         cursor.close()
 
-    def test_fetch_type_cast(self):
         self.prepare_table_all_types()
+
+    def test_fetch_type_cast(self):
         cursor = self.client.cursor()
 
         cursor.execute(f"select * from {TABLE_DATA_TYPES_TEST}")
@@ -467,6 +468,66 @@ class TestTransbase(unittest.TestCase):
         self.assertEqual(cursor.state(), transbase.State.SUCCESS)
         result = cursor.fetchone()
         self.assertEqual(1, len(result))
+        cursor.close()
+
+    def test_create_and_call_psm_noop(self):
+        cursor = self.client.cursor()
+        try:
+            cursor.execute("drop procedure noop")
+        except Exception:
+            pass
+        cursor.execute(
+            """
+        create procedure noop() as
+        begin
+        end;
+        """
+        )
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
+        cursor.execute("call noop();")
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
+        result = cursor.fetchone()
+        self.assertEqual(result, None)
+        cursor.close()
+
+    def test_create_and_call_psm_parameter(self):
+        cursor = self.client.cursor()
+        cursor.type_cast = True
+        try:
+            cursor.execute("drop procedure p")
+        except Exception:
+            pass
+        cursor.execute(
+            """
+       create procedure p(
+        in    a integer,
+        out   b integer,
+        inout c integer,
+        in    d integer,
+        out   e integer,
+        inout f integer) as
+        begin
+            b := a;
+            c := c + c;
+            e := d;
+            f := f + f;
+        end;
+        """
+        )
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
+
+        cursor.execute("call p(?,?,?,?,?,?);", [1, 2, 3, 4, 5, 6])
+        self.assertEqual(cursor.state(), transbase.State.SUCCESS)
+        result = cursor.fetchone()
+        self.assertEqual([1, 6, 4, 12], result)
+
+        cursor.execute(
+            "call p(:a,:b,:c,:d,:e,:f);",
+            {"a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6},
+        )
+        result = cursor.fetchone()
+        self.assertEqual([1, 6, 4, 12], result)
+
         cursor.close()
 
     def prepare_table_all_types(self):
